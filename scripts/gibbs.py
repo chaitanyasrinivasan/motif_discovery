@@ -2,7 +2,8 @@ import sys
 import random
 import numpy as np
 import concurrent.futures
-import itertools
+import pandas as pd
+import seqlogo
 
 #INPUT: .fasta file of motifs
 
@@ -98,6 +99,8 @@ def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
 		Pnew = propensity(A, w, k, freq)
 		if np.allclose(P, Pnew):
 			stop += 1
+		else:
+			stop = 0
 		P = Pnew
 		counter += 1
 
@@ -138,11 +141,27 @@ def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
 	S = np.log2(propensity(Anew, w, k, freq))
 	return S, Anew
 
+def plotLogo(fasta, alignment, w):
+	pwm = np.empty(shape=(w, 4))
+	pseudo = 0
+	for j in range(w):
+		count = {"a":pseudo, "c":pseudo, "g":pseudo, "t":pseudo}
+		for i in range(len(alignment)):
+			count[alignment[i][j]] += 1
+		total = sum(count.values())
+		pwm[j][0] = count["a"]/total
+		pwm[j][1] = count["c"]/total
+		pwm[j][2] = count["g"]/total
+		pwm[j][3] = count["t"]/total
+	pwmFormatted = seqlogo.CompletePm(pwm)
+	seqlogo.seqlogo(pwmFormatted, ic_scale=False, format="png", size="medium", filename=str(fasta)[:-4]+"_motif.png")
+
 def main(fasta, size):
 	w = int(size) #Length of Motif
 	seqs, freq = parse(fasta)
 	P, A, tStar, nStar, k, index, z = init(seqs, w, freq)
 	S, Anew = search(P, A, tStar, nStar, w, k, index, z, seqs, freq)
+	plotLogo(fasta, Anew, w)
 
 if __name__ == "__main__":
 	main(sys.argv[1], sys.argv[2])
