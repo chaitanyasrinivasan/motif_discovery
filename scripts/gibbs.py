@@ -4,6 +4,7 @@ import numpy as np
 import concurrent.futures
 import pandas as pd
 import seqlogo
+import matplotlib.pyplot as plt
 
 #INPUT: .fasta file of motifs
 
@@ -24,18 +25,18 @@ def parse(path):
 			freqs[i][j] = freq[j]
 	val = (freqs.sum(axis=0))
 	return seqs, val/val.sum()
-	
+
 def propensity(A, w, k, freq):
 	b = 4
 	P = np.empty(shape=(b, w))
-	pseudo = np.sqrt(k)*0.25 
+	pseudo = np.sqrt(k)*0.25
 	cols = [A[:,j] for j in range(w)]
 	for j in range(len(cols)):
 		counts = count(cols[j])
 		for i in range(b):
 			P[i][j] = (((counts[i] + pseudo)/(k + (pseudo*b))))/freq[i]
 	return P
-			
+
 #Complexity: O(kw)
 def init(seqs, w, freq):
 	k = len(seqs)
@@ -53,9 +54,11 @@ def init(seqs, w, freq):
 	return (P, A, tStar, nStar, k, index, z)
 
 def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
+	counterList = []
+	stopList = []
 	counter = 0
 	stop = 0
-	while(stop < len(seqs)):
+	while(counter < 50000):
 		#Calculate PDF
 		Pindex = {"a":0, "c":1, "g":2, "t":3, "A":0, "C": 1, "G":2, "T":3}
 		pdf = np.empty(shape=nStar-w, dtype=float)
@@ -84,7 +87,7 @@ def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
 			if oRand <= cdf[i]:
 				oStar = i
 				break
-		if oStar == -1: oStar = len(cdf)-1 
+		if oStar == -1: oStar = len(cdf)-1
 		#New special sequence
 		r = random.randint(0, k-2)
 		#Replace new special sequence with tStar
@@ -97,6 +100,8 @@ def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
 		tStar = seqs[z]
 		nStar = len(seqs[z])
 		Pnew = propensity(A, w, k, freq)
+		counterList.append(counter)
+		stopList.append(stop)
 		if np.allclose(P, Pnew):
 			stop += 1
 		else:
@@ -131,7 +136,7 @@ def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
 		if oRand <= cdf[i]:
 			oStar = i
 			break
-	if oStar == -1: oStar = len(cdf)-1  
+	if oStar == -1: oStar = len(cdf)-1
 	Anew = np.empty(shape=(k, w), dtype="str")
 	for i in range(len(A)):
 		for j in range(w):
@@ -139,7 +144,7 @@ def search(P, A, tStar, nStar, w, k, index, z, seqs, freq):
 	for j in range(w):
 		Anew[k-1][j] = tStar[oStar+j]
 	S = np.log2(propensity(Anew, w, k, freq))
-	return S, Anew
+	return S, Anew, counterList, stopList
 
 def plotLogo(fasta, alignment, w):
 	pwm = np.empty(shape=(w, 4))
@@ -160,8 +165,13 @@ def main(fasta, size):
 	w = int(size) #Length of Motif
 	seqs, freq = parse(fasta)
 	P, A, tStar, nStar, k, index, z = init(seqs, w, freq)
-	S, Anew = search(P, A, tStar, nStar, w, k, index, z, seqs, freq)
+	S, Anew, counterList, stopList = search(P, A, tStar, nStar, w, k, index, z, seqs, freq)
 	plotLogo(fasta, Anew, w)
+	fig = plt.figure()
+	plt.plot(counterList, stopList)
+	plt.savefig("loss.png")
+
+
 
 if __name__ == "__main__":
 	main(sys.argv[1], sys.argv[2])

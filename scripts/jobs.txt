@@ -1,0 +1,12 @@
+../data/MEF2A_splits/split00.txt
+../data/MEF2A_splits/split01.txt
+../data/MEF2A_splits/split02.txt
+../data/MEF2A_splits/split03.txt
+../data/MEF2A_splits/split04.txt
+../data/MEF2A_splits/split05.txt
+../data/MEF2A_splits/split06.txt
+../data/MEF2A_splits/split07.txt
+../data/MEF2A_splits/split08.txt
+../data/MEF2A_splits/split09.txt
+../data/MEF2A_splits/split10.txt
+../data/MEF2A_splits/split11.txt

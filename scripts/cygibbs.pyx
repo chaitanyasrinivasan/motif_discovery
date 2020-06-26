@@ -1,219 +1,272 @@
-import sys
+import getopt, sys
 import random
-import math
-from libc.stdlib cimport malloc, free
+import numpy as np
+cimport numpy as np
+import pandas as pd
+import seqlogo
+import matplotlib
+import matplotlib.pyplot as plt
+import json
 
-#INPUT: .fasta file of motifs
-#OUTPUT: dictionary of sequences, frequency of nucleotides
-cpdef parse(str path) nogil:
-	cdef dict seqs = dict()
-	cdef int count
-	cdef str line
-	cdef int start
-	cdef str data
-	cdef str base
-	cdef dict nucleotides = {"a":0, "c":0, "g":0, "t":0}
-	cdef dict freq = {"a":0, "c":0, "g":0, "t":0}
-	#Read in fasta file
-	with open(path, "r") as f:
-		for count, line in enumerate(f, start=0):
-				data = str(line).strip("\n")
-				seqs[count] = [data, len(data)]
-				#Get background frequency
-				for base in data:
-					if base == "a" or base == "A": nucleotides["a"] += 1
-					elif base == "c" or base == "C": nucleotides["c"] += 1
-					elif base == "g" or base == "G": nucleotides["g"] += 1
-					else:
-						nucleotides["t"] += 1
-	cdef int total = sum(nucleotides.values())
-	freq["a"] = nucleotides["a"]/total
-	freq["c"] = nucleotides["c"]/total
-	freq["g"] = nucleotides["g"]/total
-	freq["t"] = nucleotides["t"]/total
-	return (seqs, freq)
 
-cpdef propensity(A, w, k, z, freq, inputDict, index):
-	cdef double *P = <double *> malloc(4 * w * sizeof(double))
-	cdef int pseudo = 1
-	cdef int aCount = 0
-	cdef int cCount = 0
-	cdef int gCount = 0
-	cdef int tCount = 0
-	cdef int search
-	cdef double qA
-	cdef double qC
-	cdef double qG
-	cdef double qT
-	cdef str base
-	try:
-	#Row 0: A, Row1: C, Row 2: G, Row 3: T
-		for j in range(w):
-			aCount = 0
-			cCount = 0
-			gCount = 0
-			tCount = 0
-			for i in range(len(index)):
-				search = A[int(j+i*w)]
-				base = inputDict[int(index[i])][0][search]
-				if base == "a" or base == "A": aCount += 1
-				elif base == "c" or base == "C": cCount += 1
-				elif base == "g" or base == "G": gCount += 1
-				else:
-					tCount += 1
-			qA = (aCount + pseudo)/(k+(pseudo*4))
-			qC = (cCount + pseudo)/(k+(pseudo*4))
-			qG = (gCount + pseudo)/(k+(pseudo*4))
-			qT = (tCount + pseudo)/(k+(pseudo*4))
-			P[0+j*4] = qA/freq["a"]
-			P[1+j*4] = qA/freq["c"]
-			P[2+j*4] = qA/freq["g"]
-			P[3+j*4] = qA/freq["a"]
-		return [x for x in P[:4*w]]
-	finally:
-		free(P) 
-		P = NULL
+#Input: seq - np string array of a fasta sequence
+#Output: freq - a dictionary of column-wise frequencies
+#Output: intList - a list of quaternarized nucleotide sequences
+cdef count(seq):
+	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}
+	cdef dict freq = {0:0, 1:0, 2:0, 3:0}
+	cdef int i
+	cdef long[:] intList = np.array([0 for i in range(len(seq))])
+	for i in range(len(seq)):
+		freq[bases[seq[i]]] += 1
+		#Convert string to int for efficiency
+		intList[i] = int(bases[seq[i]])
+	return (freq, intList)
 
-cpdef logOdds(P, w):
-	cdef double *S = <double *> malloc(4 * w * sizeof(double))
+#Input: stringSeqs - np string matrix of fasta sequences
+#Output: quarternarized sequence matrix, background frequency dictionary, 
+#			length of sequences (cannot be inferred without O(|seq|) work
+#								since all rows equal dimensions)
+cdef parse(stringSeqs):
+	cdef int maxSize = len(max(stringSeqs, key=len))
+	cdef int b = 4 # number of bases
 	cdef int i
 	cdef int j
-	try:
-		for i in range(4):
-			for j in range(w): # A C G T
-				S[j+i*w] = math.log(P[j+i*4], 2)
-		return [x for x in S[:4*w]]
-	finally:
-		free(S)
-		S = NULL
+	cdef int k = len(stringSeqs)
+	cdef double[:] val
+	cdef double[:,:] freqs = np.empty(shape=(k, b))
+	cdef long[:,:] intSeqs = np.array([[4 for j in range(maxSize)] for i in range(k)])
+	cdef long[:] seqLengths = np.empty(shape=(k), dtype="int")
+	#0 = a, 1=c, 2=g, 3=t, 4=no base, space filler to maintain dimensions
+	for i in range(k):
+		freq, intList = count(stringSeqs[i])
+		seqLengths[i] = len(stringSeqs[i])
+		for j in range(len(intList)):
+			intSeqs[i][j] = intList[j]
+		for j in range(b):
+			freqs[i][j] = freq[j]
+	val = (np.sum(freqs, axis=0))
+	return np.array(intSeqs), val/np.sum(val), seqLengths
 
-#INPUT: dictionary of nucleotides, motif length, frequency of nucleotides
-#OUTPUT: P, t*, n*, k, index, z
-cpdef init(dict inputDict, int w, dict freq):
-	cdef int z = 0
-	cdef str tStar = inputDict[z][0]
-	cdef int nStar = inputDict[z][1]
-	cdef int k = max(inputDict, key=int)
-	cdef double *o = <double *> malloc(k * sizeof(double))
-	cdef double *index = <double *> malloc((k-1) * sizeof(double))
-	cdef double *A = <double *> malloc((k-1) * w * sizeof(double))
+cdef propensity(A, int w, k, freq):
+	cdef int b = 4
+	cdef double[:,:] P = np.empty(shape=(b, w))
+	cdef double pseudo = np.sqrt(k)*0.25
 	cdef int j
-	cdef int m
-	cdef int pseudo 
-	#Select random offsets and make a matrix of the coordinate indices
-	try:
-		for j in range(k):
-			if (j != z):
-				index[j-1] = j
-				o[j] = random.randint(0, inputDict[j][1]-w-1)
-				for m in range(w):
-					A[m+(j-1)*w] = int(o[j]+m)
-		P = propensity([x for x in A[:(k-1)*w]], w, k, z, freq, inputDict, [x for x in index[:(k-1)]])
-		return (P, [x for x in A[:(k-1)*w]], tStar, nStar, k, [x for x in index[:(k-1)]], z)
-	finally:
-		free(o)
-		o = NULL
-		free(index)
-		index = NULL
-		free(A)
-		A = NULL
+	cdef np.ndarray cols = np.array([A[:,j] for j in range(w)])
+	cdef int i
+	cdef dict counts
+	for j in range(len(cols)):
+		counts = {0:0, 1:0, 2:0, 3:0}
+		for i in range(len(cols[j])):
+			if int(cols[j][i]) in counts:
+				counts[int(cols[j][i])] += 1
+		for i in range(b):
+			P[i][j] = (((counts[i] + pseudo)/(k + (pseudo*b))))/freq[i]
+	return P
 
-cpdef search(P, A, tStar, nStar, w, k, index, z, inputDict, freq):
+#Complexity: O(kw)
+cdef init(seqs, w, freq, seqLengths):
+	cdef int k = len(seqs)
+	cdef int z = 0
+	cdef long[:] tStar = seqs[z]
+	cdef int nStar = seqLengths[z]
+	cdef int i
+	cdef long[:] index = np.array([int(i+1) for i in range(k-1)])
+	cdef long[:,:] A = np.empty(shape=(k-1, w), dtype="int")
+	cdef int j
+	cdef int o
+	cdef int m
+	#Initialize alignment with random offsets
+	for j in range(1, k):
+		o = random.randint(0, seqLengths[j]-w-1)
+		for m in range(w):
+			A[j-1][m] = seqs[j][o+m]
+	P =  propensity(A, w, k, freq)
+	return (P, A, tStar, nStar, k, index, z)
+
+cdef entropy(A, freq):
+	cdef int w = len(A[0])
+	cdef double pseudo = 0.1
+	cdef dict count
+	cdef int j
+	cdef int i
+	cdef double total
+	cdef int b
+	cdef double entropy = 0
+	for j in range(w):
+		count = {0:pseudo, 1:pseudo, 2:pseudo, 3:pseudo}
+		for i in range(len(A)):
+			if A[i][j] in count:
+				count[A[i][j]] += 1
+		total = len(A)
+		for b in range(4):
+			entropy += (count[b]/total)*np.log(count[b]/total/freq[b])
+	return entropy/w
+
+cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths):
 	cdef int counter = 0
-	cdef int randIndex = random.randint(0, 3)
-	cdef dict Pindex = {"a":0, "c":1, "g":2, "t":3, "A":0, "C": 1, "G":2, "T":3}
-	cdef double *pdf = <double *> malloc((nStar-w)*sizeof(double))
-	cdef double *cdf = <double *> malloc((nStar-w)*sizeof(double))
-	cdef double *Anew = <double *> malloc(k*w*sizeof(double))
+	cdef int stop = 0
+	cdef dict Pindex
+	cdef double[:] pdf
+	cdef int o
 	cdef double productNumerator
-	cdef double productDenominator
+	cdef int j
 	cdef double sumDenominator
+	cdef int i
+	cdef double productDenominator
+	cdef double[:] cdf
 	cdef double sumCDF
+	cdef int l
 	cdef double oRand
 	cdef int oStar
-	cdef int o
-	cdef int j
-	cdef int i
-	cdef int l
 	cdef int r
 	cdef int y
-
-	try:
-		while(counter < 10000):
-      #Calculate PDF
-			for o in range(nStar-w):
-				productNumerator = 1
-				for j in range(w):
-					productNumerator *= P[Pindex[tStar[o+j]]+j*4]
-				sumDenominator = 0
-				for i in range(nStar-w):
-					productDenominator = 1
-					for j in range(w):
-						productDenominator *= P[Pindex[tStar[i+j]]+j*4]
-					sumDenominator += productDenominator
-				pdf[o] = productNumerator/sumDenominator
-      #Calculate CDF
-			for o in range(nStar-w):
-				sumCDF = 0
-				for l in range(o):
-					sumCDF += pdf[l]
-				cdf[o] = sumCDF
-			#Choose oStar from CDF
-			oRand = random.random()
-			while(oRand > cdf[nStar-w-1]):
-				oRand = random.random()
-			oStar = -1
-			for o in range(nStar-w):
-				if oRand < cdf[o]:
-					oStar = o
-					break
-				else:
-					continue
-			if oStar == -1: oStar = nStar-w-1
-      #New special sequence
-			r = random.randint(0, k-2)
-      #Replace new special sequence with tStar coordinates
-			for i in range(w):
-				A[i+r*w] = oStar+i
-      #Store and update parameters
-			y = index[r]
-			index[r] = z
-			z = y
-			tStar = inputDict[z][0]
-			nStar = inputDict[z][1]
-			P = [x for x in propensity(A, w, k, z, freq, inputDict, [x for x in index[:(k-1)]])]
-			counter += 1
-    #Obtain A by one last update
-		for i in range(len(index)):
+	cdef long[:,:] Anew
+	cdef double[:,:] S
+	cdef double currLoss = entropy(A, freq)
+	cdef double maxLoss = currLoss
+	loss = [currLoss]
+	cdef double maxIter = k*k*np.sum(seqLengths)/len(seqLengths)
+	#Store initial state
+	bestA = A
+	bestNStar = nStar
+	bestTStar = tStar
+	bestIndex = index
+	#Run through 25000 iterations looking for max entropy
+	while(counter < maxIter):
+		#Calculate PDF
+		pdf = np.empty(shape=nStar-w, dtype=float)
+		sumDenominator = 0
+		for i in range(nStar-w):
+			productDenominator = 1
 			for j in range(w):
-				Anew[int(j+index[i]*w)] = A[j+i*w]
+				productDenominator *= P[int(tStar[i+j])][j]
+			sumDenominator += productDenominator
+		for o in range(nStar-w):
+			productNumerator = 1
+			for j in range(w):
+				productNumerator *= P[int(tStar[o+j])][j]
+			pdf[o] = productNumerator/sumDenominator
+		#Calculate CDF
+		cdf = np.empty(shape=nStar-w, dtype=float)
+		for o in range(len(cdf)-1):
+			sumCDF = 0
+			for l in range(o+1):
+				sumCDF += pdf[l]
+			cdf[o] = sumCDF
+		cdf[len(cdf)-1] = 1
+		oRand = random.random()
+		oStar = -1
+		for i in range(len(cdf)-1):
+			if oRand <= cdf[i]:
+				oStar = i
+				break
+		if oStar == -1: oStar = len(cdf)-1
+		#New special sequence
+		r = random.randint(0, k-2)
+		#Replace new special sequence with tStar
 		for i in range(w):
-			Anew[i+z*w] = oStar+i
-		return logOdds(propensity([x for x in Anew[:(k*w)]], w, k, z, freq, inputDict, [x for x in index[:(k-1)]]), w)
-	finally:
-		free(pdf)
-		pdf = NULL		
-		free(cdf)
-		cdf = NULL
-		free(Anew)
-		Anew = NULL
+			A[r][i] = tStar[oStar+i]
+		currLoss = entropy(A, freq)
+		loss.append(currLoss)
+		#Store and update parameters
+		y = index[r]
+		index[r] = z
+		z = y
+		tStar = seqs[z]
+		nStar = seqLengths[z]
+		P = propensity(A, w, k, freq)
+		if (currLoss > maxLoss):
+			maxLoss = currLoss
+			bestA = A
+			bestNStar = nStar
+			bestTStar = tStar
+			bestIndex = index
+		counter += 1
+	
+	#Obtain A by one last update
+	A = bestA
+	nStar = bestNStar
+	tStar = bestTStar
+	index = bestIndex
+	P = propensity(A, w, k, freq)
+	sumDenominator = 0
+	for i in range(nStar-w):
+		productDenominator = 1
+		for j in range(w):
+			productDenominator *= P[int(tStar[i+j])][j]
+		sumDenominator += productDenominator
+	pdf = np.empty(shape=nStar-w, dtype=float)
+	for o in range(nStar-w):
+		productNumerator = 1
+		for j in range(w):
+			productNumerator *= P[int(tStar[o+j])][j]
+		pdf[o] = productNumerator/sumDenominator
+	#Calculate CDF
+	cdf = np.empty(shape=nStar-w, dtype=float)
+	for o in range(len(cdf)-1):
+		sumCDF = 0
+		for l in range(o+1):
+			sumCDF += pdf[l]
+		cdf[o] = sumCDF
+	cdf[len(cdf)-1] = 1
+	oRand = random.random()
+	oStar = -1
+	for i in range(len(cdf)-1):
+		if oRand <= cdf[i]:
+			oStar = i
+			break
+	if oStar == -1: oStar = len(cdf)-1
+	Anew = np.empty(shape=(k, w), dtype="int")
+	for i in range(len(A)):
+		for j in range(w):
+			Anew[i][j] = A[i][j]
+	for j in range(w):
+		Anew[k-1][j] = int(tStar[oStar+j])
+	S = np.log2(propensity(Anew, w, k, freq))
+	return S, Anew, loss
 
-cpdef int main(str fasta):
-	w = 19
-	print("Parsing data")
-	inputDict, freq = parse(fasta)
-	print("Initalizing matrices")
-	P, A, tStar, nStar, k, index, z = init(inputDict, w, freq)
-	print("Searching for motif")
-	S = search(P, A, tStar, nStar, w, k, index, z, inputDict, freq)
-	for i in range(len(S)/4):
-		print("A,"+str(i+1) + " : " + str(S[i]))
-		print("C,"+str(i+1) + " : " + str(S[i+1]))
-		print("G,"+str(i+1) + " : " + str(S[i+2]))
-		print("T,"+str(i+1) + " : " + str(S[i+3]))
+def plotLogo(fasta, alignment, w):
+	pwm = np.empty(shape=(w, 4))
+	pseudo = 0
+	for j in range(w):
+		count = {0:pseudo, 1:pseudo, 2:pseudo, 3:pseudo}
+		for i in range(len(alignment)):
+			count[alignment[i][j]] += 1
+		total = sum(count.values())
+		for b in range(4):
+			pwm[j][b] = count[b]/total
+	pwmFormatted = seqlogo.CompletePm(pwm)
+	seqlogo.seqlogo(pwmFormatted, ic_scale=False, format="png", size="medium", filename=str(fasta)[:-4]+"_motif.png")
+	print("Motif logo written to " + str(fasta)[:-4]+"_motif.png")
+
+def plotLoss(fasta, loss):
+	iters = np.arange(len(loss))
+	loss = np.array(loss)
+	fig, ax = plt.subplots()
+	ax.plot(iters, loss)
+	ax.set(xlabel='Iterations', ylabel='Entropy')
+	fig.savefig(str(fasta)[:-4]+"_loss.png")
+	print("Entropy function written to " + str(fasta)[:-4]+"_loss.png")
+
+
+def main(fasta, size):
+	w = int(size) #Length of Motif
+	print("Parsing from " + fasta)
+	seqs, freq, seqLengths = parse(np.loadtxt(fasta, dtype="str"))
+	with open(str(fasta)[:-4]+".freq", "w") as f:
+		f.write(json.dumps(freq))
+	print("Initializing")
+	P, A, tStar, nStar, k, index, z = init(seqs, w, freq, seqLengths)
+	print("Searching")
+	S, Anew, loss = search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths)
+	plotLogo(fasta, Anew, w)
+	plotLoss(fasta, loss)
+	np.savetxt(str(fasta)[:-4]+".matrix", Anew)
+	print("Alignment matrix written to "+str(fasta)[:-4]+".matrix")
 	print("Done")
-	return 1
+
 
 if __name__ == "__main__":
-	main(sys.argv[1])
-    
+	main(sys.argv[1], sys.argv[2])

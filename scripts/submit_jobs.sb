@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH -n 1
+#SBATCH --partition=pfen_bigmem
+#SBATCH --job-name=motif_find
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4G
+#SBATCH --error=motif_find_%A_%a.err.txt
+#SBATCH --output=motif_find_%A_%a.out.txt
+#SBATCH --array=1-12
+
+DATA=$(awk "NR==${SLURM_ARRAY_TASK_ID}" jobs.txt)
+python test_code.py $DATA $1
