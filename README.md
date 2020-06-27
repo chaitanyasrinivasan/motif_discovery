@@ -7,8 +7,13 @@
 ```shell
    conda install -c anaconda cython
 ```
+3. Clone this repository:
 
-3. Install seqlogo with the following commands:
+```shell
+git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
+```
+
+4. Within the motif_discovery folder, install seqlogo using the following commands:
 ```shell
   git clone https://github.com/betteridiot/seqlogo.git
   cd seqLogo
@@ -18,5 +23,13 @@
 
 # **Gibbs Sampler Motif Finder**
 
+## Parameters
 
+-w --width : Integer length of motif
+-i --input : Processed .fasta file that contains only lower case DNA nucleotide characters. The file should contain at least 2 sequences, and all sequences should have length greater than or equal to the width. Raw .fasta files can be processed into a suitable format by placing them in the data/ folder and running the following command:
+
+```shell
+cd scripts
+./preprocess.sh
+```
 
