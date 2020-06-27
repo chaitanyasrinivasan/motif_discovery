@@ -6,7 +6,7 @@ import pandas as pd
 import seqlogo
 import matplotlib
 import matplotlib.pyplot as plt
-import json
+import pickle
 
 
 #Input: seq - np string array of a fasta sequence
@@ -48,7 +48,7 @@ cdef parse(stringSeqs):
 	val = (np.sum(freqs, axis=0))
 	return np.array(intSeqs), val/np.sum(val), seqLengths
 
-cdef propensity(A, int w, k, freq):
+cpdef propensity(A, int w, k, freq):
 	cdef int b = 4
 	cdef double[:,:] P = np.empty(shape=(b, w))
 	cdef double pseudo = np.sqrt(k)*0.25
@@ -104,7 +104,7 @@ cdef entropy(A, freq):
 			entropy += (count[b]/total)*np.log(count[b]/total/freq[b])
 	return entropy/w
 
-cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths):
+cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter):
 	cdef int counter = 0
 	cdef int stop = 0
 	cdef dict Pindex
@@ -122,19 +122,19 @@ cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths):
 	cdef int oStar
 	cdef int r
 	cdef int y
+	cdef int c
 	cdef long[:,:] Anew
 	cdef double[:,:] S
 	cdef double currLoss = entropy(A, freq)
 	cdef double maxLoss = currLoss
-	loss = [currLoss]
-	cdef double maxIter = k*k*np.sum(seqLengths)/len(seqLengths)
+	cdef list loss = [currLoss]
 	#Store initial state
 	bestA = A
 	bestNStar = nStar
 	bestTStar = tStar
 	bestIndex = index
-	#Run through 25000 iterations looking for max entropy
-	while(counter < maxIter):
+	#Run through maxIter iterations looking for max entropy
+	for c in range(maxIter):
 		#Calculate PDF
 		pdf = np.empty(shape=nStar-w, dtype=float)
 		sumDenominator = 0
@@ -255,12 +255,14 @@ def main(fasta, size):
 	w = int(size) #Length of Motif
 	print("Parsing from " + fasta)
 	seqs, freq, seqLengths = parse(np.loadtxt(fasta, dtype="str"))
-	with open(str(fasta)[:-4]+".freq", "w") as f:
-		f.write(json.dumps(freq))
+	with open(str(fasta)[:-4]+".freq", "wb") as f:
+		pickle.dump(freq, f)
+		print("Dictionary written to "+str(fasta)[:-4]+".freq")
 	print("Initializing")
 	P, A, tStar, nStar, k, index, z = init(seqs, w, freq, seqLengths)
 	print("Searching")
-	S, Anew, loss = search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths)
+	maxIter = k*k*np.sum(seqLengths)/len(seqLengths)
+	S, Anew, loss = search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter)
 	plotLogo(fasta, Anew, w)
 	plotLoss(fasta, loss)
 	np.savetxt(str(fasta)[:-4]+".matrix", Anew)
