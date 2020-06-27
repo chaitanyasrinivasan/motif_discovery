@@ -10,7 +10,7 @@ Installation
   conda env create -f environment.yml
 
 
- Gibbs Sampler Motif Finder
+ **Gibbs Sampler Motif Finder**
 
  Usage:
  python setup.py build_ext --inplace
