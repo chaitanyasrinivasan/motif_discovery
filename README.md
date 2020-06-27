@@ -25,11 +25,12 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 
 ## Parameters
 
--w --width : Integer length of motif
--i --input : Processed .fasta file that contains only lower case DNA nucleotide characters. The file should contain at least 2 sequences, and all sequences should have length greater than or equal to the width. Raw .fasta files can be processed into a suitable format by placing them in the data/ folder and running the following command:
+-w --width : Integer length of motif\
+-i --input : Preprocessed .fasta file that contains only lower case DNA nucleotide characters. The file should contain at least two sequences, and the sequences should have length greater than or equal to the specified width. Raw .fasta files can be processed into a suitable format by placing them in the data/ folder and running the following command:
 
 ```shell
 cd scripts
 ./preprocess.sh
 ```
 
+The preprocessing step will discard sequences that contain 'X' or 'N' and convert all characters to lowercase.
