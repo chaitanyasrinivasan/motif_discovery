@@ -34,3 +34,11 @@ cd scripts
 ```
 
 The preprocessing step will discard sequences that contain 'X' or 'N' and convert all characters to lowercase.
+
+## Usage
+
+```shell
+cd scripts
+python setup.py build_ext --inplace
+./gibbs_parallel.sh -i [/path/to/input] -w [integer size]
+```

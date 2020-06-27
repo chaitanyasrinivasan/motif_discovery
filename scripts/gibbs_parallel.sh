@@ -32,6 +32,7 @@ while [ "$1" != "" ]; do
 	shift
 
 done
+############## INPUT COMPATABILITY CHECKS ################
 
 # check if input file exists
 if [ $(ls ${INPUT}| wc -l) -eq 0 ]
@@ -61,15 +62,24 @@ do
 fi; 
 done < ${INPUT}
 
-#BEGIN ALGORITHM
+############## BEGIN ALGORITHM ################
+
 mkdir -p "${INPUT::-4}_splits"
 #SHUFFLE
 echo "Splitting data"
+#Randomize sequence order in case nearby sequences are similar
 shuf ${INPUT} > "${INPUT::-4}_shuffled.txt"
 #PARTITION
 lines_per_file=5
 split -d --lines=${lines_per_file} --additional-suffix=.txt "${INPUT::-4}_shuffled.txt" "${INPUT::-4}_splits"/split
-#If file 
+#If there is a split file with length 1, add it to the first file
+last_file=$(ls -1 "${INPUT::-4}_splits"/split* | tail -n 1)
+first_file=$(ls -1 "${INPUT::-4}_splits"/split* | head -n 1)
+if [ $(wc -l <$last_file) -eq 1 ]
+then
+	cat $last_file >> $first_file 
+	rm $last_file
+fi;
 #CREATE JOB ARRAY OF PARTITIONS
 echo "Creating job array"
 ls -d "${INPUT::-4}_splits"/*.txt >> jobs.txt
