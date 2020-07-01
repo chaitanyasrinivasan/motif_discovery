@@ -1,13 +1,12 @@
-import getopt, sys
+import sys
 import random
 import numpy as np
 cimport numpy as np
 import pandas as pd
 import seqlogo
-import matplotlib
 import matplotlib.pyplot as plt
 import pickle
-
+import argparse
 
 #Input: seq - np string array of a fasta sequence
 #Output: freq - a dictionary of column-wise frequencies
@@ -104,10 +103,7 @@ cdef entropy(A, freq):
 			entropy += (count[b]/total)*np.log(count[b]/total/freq[b])
 	return entropy/w
 
-cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter):
-	cdef int counter = 0
-	cdef int stop = 0
-	cdef dict Pindex
+cpdef getOptSeq(P, tStar, nStar, w):
 	cdef double[:] pdf
 	cdef int o
 	cdef double productNumerator
@@ -120,84 +116,15 @@ cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter
 	cdef int l
 	cdef double oRand
 	cdef int oStar
-	cdef int r
-	cdef int y
-	cdef int c
-	cdef long[:,:] Anew
-	cdef double[:,:] S
-	cdef double currLoss = entropy(A, freq)
-	cdef double maxLoss = currLoss
-	cdef list loss = [currLoss]
-	#Store initial state
-	bestA = A
-	bestNStar = nStar
-	bestTStar = tStar
-	bestIndex = index
-	#Run through maxIter iterations looking for max entropy
-	for c in range(maxIter):
-		#Calculate PDF
-		pdf = np.empty(shape=nStar-w, dtype=float)
-		sumDenominator = 0
-		for i in range(nStar-w):
-			productDenominator = 1
-			for j in range(w):
-				productDenominator *= P[int(tStar[i+j])][j]
-			sumDenominator += productDenominator
-		for o in range(nStar-w):
-			productNumerator = 1
-			for j in range(w):
-				productNumerator *= P[int(tStar[o+j])][j]
-			pdf[o] = productNumerator/sumDenominator
-		#Calculate CDF
-		cdf = np.empty(shape=nStar-w, dtype=float)
-		for o in range(len(cdf)-1):
-			sumCDF = 0
-			for l in range(o+1):
-				sumCDF += pdf[l]
-			cdf[o] = sumCDF
-		cdf[len(cdf)-1] = 1
-		oRand = random.random()
-		oStar = -1
-		for i in range(len(cdf)-1):
-			if oRand <= cdf[i]:
-				oStar = i
-				break
-		if oStar == -1: oStar = len(cdf)-1
-		#New special sequence
-		r = random.randint(0, k-2)
-		#Replace new special sequence with tStar
-		for i in range(w):
-			A[r][i] = tStar[oStar+i]
-		currLoss = entropy(A, freq)
-		loss.append(currLoss)
-		#Store and update parameters
-		y = index[r]
-		index[r] = z
-		z = y
-		tStar = seqs[z]
-		nStar = seqLengths[z]
-		P = propensity(A, w, k, freq)
-		if (currLoss > maxLoss):
-			maxLoss = currLoss
-			bestA = A
-			bestNStar = nStar
-			bestTStar = tStar
-			bestIndex = index
-		counter += 1
-	
-	#Obtain A by one last update
-	A = bestA
-	nStar = bestNStar
-	tStar = bestTStar
-	index = bestIndex
-	P = propensity(A, w, k, freq)
+
+	#Calculate PDF
+	pdf = np.empty(shape=nStar-w, dtype=float)
 	sumDenominator = 0
 	for i in range(nStar-w):
 		productDenominator = 1
 		for j in range(w):
 			productDenominator *= P[int(tStar[i+j])][j]
 		sumDenominator += productDenominator
-	pdf = np.empty(shape=nStar-w, dtype=float)
 	for o in range(nStar-w):
 		productNumerator = 1
 		for j in range(w):
@@ -218,6 +145,56 @@ cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter
 			oStar = i
 			break
 	if oStar == -1: oStar = len(cdf)-1
+	return oStar
+
+
+cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter):
+	cdef int r
+	cdef int y
+	cdef int c
+	cdef long[:,:] Anew
+	cdef double[:,:] S
+	cdef double currLoss = entropy(A, freq)
+	cdef double maxLoss = currLoss
+	cdef list loss = [currLoss]
+
+	#Store initial state
+	bestA = A
+	bestNStar = nStar
+	bestTStar = tStar
+	bestIndex = index
+	#Run through maxIter iterations looking for max entropy
+	for c in range(maxIter):
+		oStar = getOptSeq(P, tStar, nStar, w)
+		#New special sequence
+		r = random.randint(0, k-2)
+		#Replace new special sequence with tStar
+		for i in range(w):
+			A[r][i] = tStar[oStar+i]
+		currLoss = entropy(A, freq)
+		loss.append(currLoss)
+		#Store and update parameters
+		y = index[r]
+		index[r] = z
+		z = y
+		tStar = seqs[z]
+		nStar = seqLengths[z]
+		P = propensity(A, w, k, freq)
+		#Update max args
+		if (currLoss > maxLoss):
+			maxLoss = currLoss
+			bestA = A
+			bestNStar = nStar
+			bestTStar = tStar
+			bestIndex = index
+	
+	#Obtain A by one last update
+	A = bestA
+	nStar = bestNStar
+	tStar = bestTStar
+	index = bestIndex
+	P = propensity(A, w, k, freq)
+	oStar = getOptSeq(P, tStar, nStar, w)
 	Anew = np.empty(shape=(k, w), dtype="int")
 	for i in range(len(A)):
 		for j in range(w):

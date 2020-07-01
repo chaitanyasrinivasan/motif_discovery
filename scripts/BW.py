@@ -86,18 +86,12 @@ def backward(seq, sLen, A, E, pi):
 
 
 def posterior_decode(alpha, beta, t):
-	max, argmax = 0, 0
-	for i in range(len(alpha[0])):
-		if (alpha[t][i]*beta[t+1][i] > max):
-			max = alpha[t][i]*beta[t+1][i]
-			argmax = i
-	return argmax
-
+	args = np.array([alpha[t][i]*beta[t+1][i] for i in range(len(alpha[0]))])
+	return np.argmax(args)
 
 def BW(seqs, seqLengths, A, E, pi):
 	b = len(pi)
 	#Posterior decoding to label data
-	labels = np.empty(shape=(len(seqs), len(seqs[0])))
 	
 	#Iterate through dataset
 	for d in range(len(seqs)):
@@ -107,6 +101,10 @@ def BW(seqs, seqLengths, A, E, pi):
 		Anew = np.zeros(shape=(t, t), dtype=float)
 		Enew = np.zeros(shape=(t, b), dtype=float)
 		pinew = np.zeros(shape=b, dtype=float)
+		#Label data
+		labels = np.zeros(shape=t, dtype=int)
+		for i in range(t):
+			labels[i] = posterior_decode(alpha, beta, i)
 		#Transitions for each seq
 		for i in range(len(Anew)):
 			for j in range(len(Anew[i])):
@@ -121,7 +119,8 @@ def BW(seqs, seqLengths, A, E, pi):
 						Enew[i][j] += alpha[k][i]*beta[k+1][i]
 				Enew[i][j] = Enew[i][j]/prob
 		#Initial probability
-
+		pinew[labels[0]] += 1/prob
+	print(pinew)
 
 	
 def main(fasta):

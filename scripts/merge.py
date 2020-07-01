@@ -51,7 +51,4 @@ if __name__ == "__main__":
 	fasta = sys.argv[2]
 	k = int(sys.argv[3])
 	w = int(sys.argv[4])
-	if not isinstance(w, int):
-		raise Exception("Width is not an integer, exiting program.")
-		sys.exit()
 	main(jobs, fasta, k, w)
