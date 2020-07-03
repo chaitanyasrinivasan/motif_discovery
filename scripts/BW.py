@@ -1,6 +1,8 @@
 import sys
+import align
 import numpy as np
 
+#KEEP FOR ALIGN ALGORITHM
 def parse(path):
 	#Load and convert fasta seqs into int seqs
 	seqs = np.loadtxt(path, dtype=str)
@@ -16,12 +18,7 @@ def parse(path):
 	return intSeqs, seqLengths
 
 
-#L+2=10+2=12 (guess) match states
-#11 insertion states
-#10 deletion states
-# number of states = 12+11+10=33
-# double weight : 2/(33+12)
-# number of observations = 4
+#CHANGEME
 def init(L):
 	#Try initializing uniform
 	m = L + 2
@@ -85,15 +82,40 @@ def backward(seq, sLen, A, E, pi):
 		prob += pi[j]*E[j][seq[0]]*beta[1][j]
 	return beta, prob
 
-
-def posterior_decode(alpha, beta, t):
-	args = np.array([alpha[t][i]*beta[t+1][i] for i in range(len(alpha[0]))])
-	return np.argmax(args)
+#return state labels based on multi-align matrix
+def label(multi_align):
+	seqLength = len(multi_align[0])
+	numSeqs = len(multi_align)
+	states = np.empty(shape=seqLength, dtype=int)
+	#determine states based on gap frequency
+	#0 - match, 1 - insert, 2 delete
+	for j in range(seqLength):
+		count = 0
+		for i in range(numSeqs):
+			if multi_align[i][j] == 4:
+				count += 1
+		if count > int(numSeqs/2):
+			states[j] = 1
+		else:
+			states[j] = 0
+	#assign label to seqs
+	seq_labels = np.empty(shape=(numSeqs, seqLength), dtype=int)
+	for i in range(numSeqs):
+		for j in range(seqLength):
+			if states[j] == 0:
+				if multi_align[i][j] == 4:
+					seq_labels[i][j] = 2
+				else:
+					seq_labels[i][j] = 0
+			else:
+				if multi_align[i][j] == 4:
+					seq_labels[i][j] = 1
+				else:
+					seq_labels[i][j] = 0
+	return seq_labels
 
 def BW(seqs, seqLengths, A, E, pi):
 	b = len(pi)
-	#Posterior decoding to label data
-
 	#Iterate through dataset
 	for d in range(len(seqs)):
 		t = seqLengths[d]
@@ -127,7 +149,8 @@ def BW(seqs, seqLengths, A, E, pi):
 def main(fasta):
 	states = {"a": 0, "c": 1, "g": 2, "t":3}
 	seqs, seqLengths = parse(fasta)
-	print(seqs, seqLengths)
+	multi_align = np.array([x for x in align.main(fasta)])
+	print(multi_align)
 	#L = 10
 	#A, E, pi = init(L) #guess on size of TF binding site
 	#BW(seqs, seqLengths, A, E, pi)

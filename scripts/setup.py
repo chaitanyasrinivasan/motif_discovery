@@ -7,6 +7,6 @@ import numpy
 # include_dirs can be passed to setup()
 
 setup(
-    ext_modules=cythonize("cygibbs.pyx"),
+    ext_modules=cythonize("*.pyx"),
     include_dirs=[numpy.get_include()]
 )

@@ -1,14 +1,23 @@
 import numpy as np
+cimport numpy as np
 import BW
 import sys
 
 
 #Takes in two sequences and their length
 #Returns the pairwise alignment
-def pairwise_align(seq1, seq2, l1, l2):
-	match, mismatch, gap = 5, -1, -4
-	A = np.empty(shape=(l1+1, l2+1), dtype=int)
-	T = np.zeros(shape=(l1+1, l2+1), dtype=int)
+cpdef pairwise_align(seq1, seq2, l1, l2):
+	cdef int match = 5
+	cdef int mismatch = -1
+	cdef int gap = -4
+	cdef long [:,:] A = np.empty(shape=(l1+1, l2+1), dtype=int)
+	cdef long [:,:] T = np.zeros(shape=(l1+1, l2+1), dtype=int)
+	cdef int i
+	cdef int j
+	cdef int k
+	cdef int score
+	cdef long [:] vals
+	cdef long [:,:] aligned
 	#INITIALIZE
 	A[0][0] = gap
 	for j in range(1,l2+1):
@@ -23,7 +32,7 @@ def pairwise_align(seq1, seq2, l1, l2):
 			else:
 				score = mismatch
 			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score])
-			A[i][j] = max(vals)
+			A[i][j] = np.amax(vals)
 			T[i][j] = np.argmax(vals) #0, vertical, 1 horizontal, 2 diagonal
 	#TRACEBACK
 	aligned = np.array([[4 for _ in range(max(l1, l2))] for _ in range(2)])
@@ -45,16 +54,19 @@ def pairwise_align(seq1, seq2, l1, l2):
 	return aligned
 
 #Hamming distance function
-def distance(seq1, seq2):
-	val = 0
+cpdef distance(seq1, seq2):
+	cdef int val = 0
+	cdef int i
 	for i in range(len(seq1)):
 		if seq1[i] != seq2[i]:
 			val += 1
 	return val
 
 #Pairwise distance matrix of alignments
-def get_pairs(seqs, seqLengths):
-	distances = np.zeros(shape=(len(seqs), len(seqs)), dtype=int)
+cpdef get_pairs(seqs, seqLengths):
+	cdef long [:,:] distances = np.zeros(shape=(len(seqs), len(seqs)), dtype=int)
+	cdef int i
+	cdef int j
 	for i in range(len(seqs)):
 		for j in range(len(seqs)):
 			if (i != j and i > j):
@@ -65,10 +77,21 @@ def get_pairs(seqs, seqLengths):
 	return distances
 
 #Perform alignment of two aligned sequence sets
-def merge_align(align1, align2, l1, l2):
-	match, mismatch, gap = 5, -1, -4
-	A = np.empty(shape=(l1+1, l2+1), dtype=int)
-	T = np.zeros(shape=(l1+1, l2+1), dtype=int)
+cpdef merge_align(align1, align2, l1, l2):
+	cdef int match = 5
+	cdef int mismatch = -1
+	cdef int gap = -4
+	cdef long [:,:] A = np.empty(shape=(l1+1, l2+1), dtype=int)
+	cdef long [:,:] T = np.zeros(shape=(l1+1, l2+1), dtype=int)
+	cdef int i
+	cdef int j
+	cdef int k
+	cdef int l
+	cdef int m
+	cdef int score
+	cdef long [:] vals
+	cdef long [:,:] aligned
+
 	#INITIALIZE
 	A[0][0] = gap
 	for j in range(1,l2+1):
@@ -114,7 +137,10 @@ def merge_align(align1, align2, l1, l2):
 			j -= 1
 	return aligned
 
-def result(seqs, seqLengths, distances):
+cpdef result(seqs, seqLengths, distances):
+	cdef list vals
+	cdef list lengths
+	cdef int i
 	if (len(seqs) == 1):
 		return seqs.pop(0)
 	else:
@@ -125,10 +151,13 @@ def result(seqs, seqLengths, distances):
 			lengths.append(len(vals[-1][0]))
 		return result(vals, lengths, distances)
 
-if __name__ == "__main__":
+def main(fasta):
 	#0-A, 1-C, 2-G, 3-T, 4-GAP
-	seqs, seqLengths = BW.parse(sys.argv[1])
+	seqs, seqLengths = BW.parse(fasta)
 	distances = get_pairs(seqs, seqLengths)
 	multi_align = result([pairwise_align(seqs[i], seqs[i+1], seqLengths[i], seqLengths[i+1]) for i in range(int(len(seqs)/2))], [y for y in seqLengths], distances)
-	print(multi_align)
-	np.savetxt(sys.argv[1][:-4]+".align", multi_align)
+	return multi_align
+
+if __name__ == "__main__":
+	main(sys.argv[1])
+

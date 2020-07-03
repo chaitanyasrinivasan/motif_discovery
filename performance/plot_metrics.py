@@ -7,8 +7,12 @@ if __name__ == "__main__":
 	parallel= np.loadtxt("parallel_metrics.txt", dtype=float)
 	size = np.arange(len(sequential), dtype=int)
 	fig, ax1 = plt.subplots()
-	ax1.plot(size, sequential, 'g-', label="Sequential Time (seconds)")
-	ax1.plot(size, parallel, 'b-', label="Parallel Time (seconds)")
+	ax1.plot(size, sequential, 'g-', label="Sequential Time")
+	ax1.plot(size, parallel, 'b-', label="Parallel")
+	ax1.set_xlabel("Number of sequences")
+	ax1.set_ylabel("Time (seconds)")
+	fig.suptitle("Gibb's Sampler Runtime")
+	ax1.legend()
 	fig.savefig("performance.png")
 
 
