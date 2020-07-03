@@ -15,6 +15,7 @@ def parse(path):
 			intSeqs[i][j] = bases[seqs[i][j]]
 	return intSeqs, seqLengths
 
+
 #L+2=10+2=12 (guess) match states
 #11 insertion states
 #10 deletion states
@@ -92,11 +93,11 @@ def posterior_decode(alpha, beta, t):
 def BW(seqs, seqLengths, A, E, pi):
 	b = len(pi)
 	#Posterior decoding to label data
-	
+
 	#Iterate through dataset
 	for d in range(len(seqs)):
 		t = seqLengths[d]
-		alpha, prob = forward(seqs[d], seqLengths[d], A, E, pi) 
+		alpha, prob = forward(seqs[d], seqLengths[d], A, E, pi)
 		beta, _ = backward(seqs[d], seqLengths[d], A, E, pi)
 		Anew = np.zeros(shape=(t, t), dtype=float)
 		Enew = np.zeros(shape=(t, b), dtype=float)
@@ -122,13 +123,14 @@ def BW(seqs, seqLengths, A, E, pi):
 		pinew[labels[0]] += 1/prob
 	print(pinew)
 
-	
+
 def main(fasta):
 	states = {"a": 0, "c": 1, "g": 2, "t":3}
 	seqs, seqLengths = parse(fasta)
-	L = 10
-	A, E, pi = init(L) #guess on size of TF binding site
-	BW(seqs, seqLengths, A, E, pi)
+	print(seqs, seqLengths)
+	#L = 10
+	#A, E, pi = init(L) #guess on size of TF binding site
+	#BW(seqs, seqLengths, A, E, pi)
 
 
 if __name__ == "__main__":
