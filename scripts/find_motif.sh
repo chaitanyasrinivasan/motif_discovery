@@ -1,10 +1,11 @@
 #!/bin/bash
 helpFunction()
 {
-	echo -e "Usage: $0 -i [/path/to/fasta] -w [motif size]\n"
+	echo -e "Usage: $0 -i [/path/to/fasta] -w [motif size] -t [BED/FASTA/GENES]\n"
 	echo -e "Required arguments:"
 	echo -e "\t-i, --input\tFile path to the processed fasta file"
 	echo -e "\t-w, --width\tPositive integer of motif width"
+	echo -e "\t-t --type\t Supported types: BED/FASTA/GENES"
 	echo -e "Optional arguments:"
 	echo -e "\t-s, --sequential\tRun sequentially"
 	echo -e "\t-p, --parallel\tRun in parallel"
@@ -33,6 +34,9 @@ while [ "$1" != "" ]; do
 								;;
 		-w | --width )			shift
 								WIDTH=$1
+								;;
+		-t | --type )			shift
+								TYPE=$1
 								;;
 		-v | --verbose )		shift
 								VERBOSE=1
@@ -82,8 +86,12 @@ do
 	exit 1
 fi; 
 done < ${INPUT}
-
-
+if [[ $TYPE != "BED" && $TYPE != "FASTA" && $TYPE != "GENES" ]]
+then
+	echo "Error: Provided file type not supported"
+	helpFunction
+	exit 1
+fi
 ############## PARALLEL ALGORITHM ################
 
 parallelRun()

@@ -149,8 +149,9 @@ def BW(seqs, seqLengths, A, E, pi):
 def main(fasta):
 	states = {"a": 0, "c": 1, "g": 2, "t":3}
 	seqs, seqLengths = parse(fasta)
-	multi_align = np.array([x for x in align.main(fasta)])
-	print(multi_align)
+	align.main(fasta)
+	#multi_align = np.array([x for x in align.main(fasta)])
+	#print(multi_align)
 	#L = 10
 	#A, E, pi = init(L) #guess on size of TF binding site
 	#BW(seqs, seqLengths, A, E, pi)
