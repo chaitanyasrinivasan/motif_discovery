@@ -26,6 +26,7 @@ WIDTH=-1
 VERBOSE=0
 PARALLEL=0
 SEQUENTIAL=0
+
 # read in command line arguments
 while [ "$1" != "" ]; do
 	case $1 in
@@ -74,7 +75,7 @@ fi
 # check input width
 if (($WIDTH < 1))
 	then
-	echo "Error: width ${WIDTH} must be an integer greater than 0"
+	echo "Error: width must be an integer greater than 0"
 	exit 1
 fi
 #check width is greater than sequence lengths
@@ -143,25 +144,65 @@ parallelRun()
 
 ############### DETERMINE MODE ##########################
 GRAN=20 #empirically determined
-#Automatically infer if parallel or sequential is faster
-if [ $SEQUENTIAL -eq $PARALLEL ]
+if [[ $TYPE = "FASTA" ]]
 then
-	if [ $(wc -l <${INPUT}) -lt $GRAN ]
+	#Automatically infer if parallel or sequential is faster
+	if [ $SEQUENTIAL -eq $PARALLEL ]
+	then
+		if [ $(wc -l <${INPUT}) -lt $GRAN ]
+		then
+			python run_gibbs.py -i $INPUT -w $WIDTH
+			exit 1
+		else
+			parallelRun
+			exit 1
+		fi
+	fi
+	if (( SEQUENTIAL ))
 	then
 		python run_gibbs.py -i $INPUT -w $WIDTH
 		exit 1
-	else
+	fi
+	if (( PARALLEL ))
+	then
 		parallelRun
 		exit 1
 	fi
 fi
-if (( SEQUENTIAL ))
+if [[ $TYPE = "BED" ]]
 then
-	python run_gibbs.py -i $INPUT -w $WIDTH
-	exit 1
+	#Check BED is correctly formatted using bedtools quick command
+
+	#Download hg38 fasta
+	wget -nc ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+	bedtools getfasta -fi hg38.fa.gz -bed ${INPUT} > "${INPUT::-4}.fa"
+	sh preprocess.sh "${INPUT::-4}.fa"
+	#Redirect input var to processed fasta
+	INPUT="${INPUT::-4}.txt" 
+	#Automatically infer if parallel or sequential is faster
+	if [ $SEQUENTIAL -eq $PARALLEL ]
+	then
+		if [ $(wc -l <${INPUT}) -lt $GRAN ]
+		then
+			python run_gibbs.py -i $INPUT -w $WIDTH
+			exit 1
+		else
+			parallelRun
+			exit 1
+		fi
+	fi
+	if (( SEQUENTIAL ))
+	then
+		python run_gibbs.py -i $INPUT -w $WIDTH
+		exit 1
+	fi
+	if (( PARALLEL ))
+	then
+		parallelRun
+		exit 1
+	fi
 fi
-if (( PARALLEL ))
+if [[ $TYPE = "GENE" ]]
 then
-	parallelRun
-	exit 1
+	sh gene_map.sh ${INPUT}
 fi

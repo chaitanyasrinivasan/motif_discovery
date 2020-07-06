@@ -14,7 +14,6 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 	cdef long [:,:] T = np.zeros(shape=(l1+1, l2+1), dtype=int)
 	cdef int i
 	cdef int j
-	cdef int k
 	cdef int score
 	cdef long [:] vals
 	cdef long [:,:] aligned
@@ -34,8 +33,6 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score])
 			A[i][j] = np.amax(vals)
 			T[i][j] = np.argmax(vals) #0, vertical, 1 horizontal, 2 diagonal
-	print(np.array([x for x in A]))
-	print(np.array([x for x in T]))
 	#TRACEBACK
 	aligned = np.array([[4 for _ in range(l1)] for _ in range(2)])
 	for i in range(l1):
@@ -52,7 +49,6 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 			aligned[1][i-1] = seq2[j-1]
 			i -= 1
 			j -= 1
-	print(np.array([x for x in aligned]))
 	return aligned
 
 #Hamming distance function
@@ -69,20 +65,41 @@ cpdef get_pairs(seqs, seqLengths):
 	cdef long [:,:] distances = np.zeros(shape=(len(seqs), len(seqs)), dtype=int)
 	cdef int i
 	cdef int j
+	cdef dict dists = dict()
+	cdef int minVal
+	cdef int minArg
+	cdef int oddSeq = -1
+	#COMPUTE DISTANCES
 	for i in range(len(seqs)):
 		for j in range(len(seqs)):
-			if (i != j and i > j):
-				aligned = pairwise_align(seqs[i], seqs[j], seqLengths[i], seqLengths[j])
+			if (i > j):
+				if (seqLengths[i] >= seqLengths[j]):
+					aligned = pairwise_align(seqs[i], seqs[j], seqLengths[i], seqLengths[j])
+				else:
+					aligned = pairwise_align(seqs[j], seqs[i], seqLengths[j], seqLengths[i])
 				distanceVal = distance(aligned[0], aligned[1])
 				distances[i][j] = distanceVal
 				distances[j][i] = distanceVal
-	return distances
+	#PRIMS ALGORITHM
+	for i in range(len(seqs)):
+		if len(dists) == (len(seqs) -1):
+			oddSeq = i
+		if (i in dists):
+			break
+		minVal = len(seqs[0])+1
+		for j in range(len(seqs)):
+			if (i != j and distances[i][j] < minVal and j not in dists):
+				minVal = distances[i][j]
+				minArg = j
+		dists[i] = minArg
+		dists[minArg] = i
+	return dists, oddSeq
 
 #Perform alignment of two aligned sequence sets
 cpdef merge_align(align1, align2, l1, l2):
 	cdef int match = 5
 	cdef int mismatch = -1
-	cdef int gap = -2
+	cdef int gap = -4
 	cdef long [:,:] A = np.empty(shape=(l1+1, l2+1), dtype=int)
 	cdef long [:,:] T = np.zeros(shape=(l1+1, l2+1), dtype=int)
 	cdef int i
@@ -93,91 +110,95 @@ cpdef merge_align(align1, align2, l1, l2):
 	cdef int score
 	cdef long [:] vals
 	cdef long [:,:] aligned
-
+	cdef set common = set()
 	#INITIALIZE
 	A[0][0] = 0
 	for j in range(1,l2+1):
-		if l1 >= l2:
-			A[0][j] = A[0][j-1] + gap
-		else:
-			A[0][j] = 0
+		A[0][j] = A[0][j-1] + gap
 	for i in range(1, l1+1):
-		if l2 > l1:
-			A[i][0] = A[i-1][0] + gap
-		else:
-			A[i][0] = 0
+		A[i][0] = 0
 	#RECURRENCE
 	for i in range(1, l1+1):
 		for j in range(1, l2+1):
 			#Check if columns completely match
-			if (set(align1[:,i-1]) == set(align2[:,j-1])):
-				if (4 in align1[:,i-1] or 4 in align2[:,j-1]):
-					score = match + gap
-				else:
-					score = match + match
-			elif (len(set.intersection(set(align1[:,i-1]), set(align2[:,j-1]))) > 1):
+			if (set(align1[:,i-1]) == set(align2[:,j-1]) and set(align1[:,i-1]) != set([4])):
 				score = match
 			else:
 				score = mismatch
 			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score])
 			A[i][j] = max(vals)
 			T[i][j] = np.argmax(vals) #0, vertical, 1 horizontal, 2 diagonal
+	print(np.array([x for x in A]))
+	print(np.array([x for x in T]))
 	#TRACEBACK
-	aligned = np.array([[4 for _ in range(max(l1, l2))] for _ in range(len(align1)+len(align2))])
-	if l1 >= l2:
-		i, j = np.argmax(A[:,l2]), l2
-	else:
-		i, j = l1, np.argmax(A[l1])
-	for k in range(max(l1, l2)-1, -1, -1):
+
+	i, j = np.argmax(A[:,l2]), l2
+	aligned = np.array([[4 for _ in range(l1+(l2-i+1))] for _ in range(len(align1)+len(align2))])
+	for l in range(len(align1)):
+		for m in range(i-1, l1):
+			aligned[l][m+(l2-i+1)] = align1[l][m]
+	while (i > 0):
+		print(i, j)
+		print(np.array([x for x in aligned]))
 		if (T[i][j] == 0):
-			for l in range(len(align1)):
-				aligned[l][k] = align1[l][i-1]
-			for m in range(len(align1)-1, len(aligned)):
-				aligned[m][k] = 4
+			for m in range(len(align2)):
+				aligned[m+len(align1)][i-1] = align2[m][j-1]
 			i -= 1
 		elif (T[i][j] == 1):
-			for l in range(len(align1)):
-				aligned[l][k] = 4
-			for m in range(len(align2)):
-				aligned[len(align1)+m][k] = align2[m][j-1]
+			for m in range(len(align1)):
+				aligned[m][i-1] = align1[m][i-1]
 			j -= 1
 		else:
-			for l in range(len(align1)):
-				aligned[l][k] = align1[l][i-1]
+			for m in range(len(align1)):
+				aligned[m][i-1] = align1[m][i-1]
 			for m in range(len(align2)):
-				aligned[len(align1)+m][k] = align2[m][j-1]
+				aligned[m+len(align1)][i-1] = align2[m][j-1]
 			i -= 1
 			j -= 1
+	print(np.array([x for x in align1]))
+	print(np.array([x for x in align2]))
 	print(np.array([x for x in aligned]))
+	sys.exit()
 	return aligned
 
-cpdef result(seqs, seqLengths, distances):
+cpdef result(seqList, lengthList):
 	cdef list vals
 	cdef list lengths
 	cdef int i
-	if (len(seqs) == 1):
-		return seqs.pop(0)
+	if (len(seqList) == 1):
+		return seqList.pop(0)
 	else:
 		vals = list()
 		lengths = list()
-		for i in range(int(len(seqs)/2)):
-			vals.append(merge_align(seqs[i], seqs[i+1], seqLengths[i], seqLengths[i+1]))
+		for i in range(int(len(seqList)/2)):
+			if (lengthList[i] >= lengthList[i+1]):
+				vals.append(merge_align(seqList[i], seqList[i+1], lengthList[i], lengthList[i+1]))
+			else:
+				vals.append(merge_align(seqList[i+1], seqList[i], lengthList[i+1], lengthList[i]))
 			lengths.append(len(vals[-1][0]))
-		return result(vals, lengths, distances)
+		return result(vals, lengths)
 
 def main(fasta):
 	#0-A, 1-C, 2-G, 3-T, 4-GAP
 	seqs, seqLengths = BW.parse(fasta)
-	distances = get_pairs(seqs, seqLengths)
+	dists, oddSeq = get_pairs(seqs, seqLengths)
+	noDoubles = set()
 	seqList = list()
-	for i in range(int(len(seqs)/2)):
-		if seqLengths[i] >= seqLengths[i+1]:
-			seqList.append(pairwise_align(seqs[i], seqs[i+1], seqLengths[i], seqLengths[i+1]))
-		else:
-			seqList.append(pairwise_align(seqs[i+1], seqs[i], seqLengths[i+1], seqLengths[i]))
-	multi_align = result(seqList, [y for y in seqLengths], distances)
-	return multi_align
+	lengthList = list()
+	for key in dists:
+		if (key not in noDoubles):
+			if seqLengths[key] >= seqLengths[dists[key]]:
+				seqList.append(pairwise_align(seqs[key], seqs[dists[key]], seqLengths[key], seqLengths[dists[key]]))
+			else:
+				seqList.append(pairwise_align(seqs[dists[key]], seqs[key], seqLengths[dists[key]], seqLengths[key]))
+			lengthList.append(len(seqList[-1][0]))
+			noDoubles.add(key)
+			noDoubles.add(dists[key])
+	if (oddSeq != -1):
+		seqList.append(seqs[oddSeq])
+	multi_align = result(seqList, lengthList)
+	print(np.array([x for x in multi_align]))
+	#return multi_align
 
 if __name__ == "__main__":
 	main(sys.argv[1])
-

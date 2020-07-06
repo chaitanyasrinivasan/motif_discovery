@@ -6,13 +6,11 @@ cd ../data
 mkdir -p genes exons exons_merged introns genes_20KBflank introns_and_flanks
 
 #GET GENE AND EXON COORDINATES
-
+file=$1
 echo "Mapping gene names to gene and exon coordinates..."
 
-for file in *.csv;
-do
-	python ../scripts/get_gene_and_exon_coordinates.py $file
-done
+python ../scripts/get_gene_and_exon_coordinates.py $file
+
 mv *genes.bed genes/
 mv *exons.bed exons/
 #MERGE, SUBTRACT EXONS FROM GENE, AND FLANK GENE 20KB
