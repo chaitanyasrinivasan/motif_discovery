@@ -5,8 +5,10 @@ import sys
 
 
 #Takes in two sequences and their length, l1 >= l2
-#Returns the pairwise semi-global alignment
+#Returns the pairwise local alignment
 cpdef pairwise_align(seq1, seq2, l1, l2):
+	print(np.array([x for x in seq1]))
+	print(np.array([x for x in seq2]))
 	cdef int match = 5
 	cdef int mismatch = -1
 	cdef int gap = -4
@@ -17,10 +19,14 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 	cdef int score
 	cdef long [:] vals
 	cdef long [:,:] aligned
+	cdef str str1 = ""
+	cdef str str2 = ""
+	cdef int starti
+	cdef int startj
 	#INITIALIZE
 	A[0][0] = 0
 	for j in range(1,l2+1):
-		A[0][j] = A[0][j-1] + gap
+		A[0][j] = 0
 	for i in range(1, l1+1):
 		A[i][0] = 0
 	#RECURRENCE
@@ -30,26 +36,38 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 				score = match
 			else:
 				score = mismatch
-			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score])
+			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score, 0])
 			A[i][j] = np.amax(vals)
 			T[i][j] = np.argmax(vals) #0, vertical, 1 horizontal, 2 diagonal
-	#TRACEBACK
-	aligned = np.array([[4 for _ in range(l1)] for _ in range(2)])
-	for i in range(l1):
-		aligned[0][i] = seq1[i]
-	i, j = np.argmax(A[:,l2]), l2
-	while (i > 0):
+	#TRACEBACK LOCAL ALIGNMENT
+	print(np.array([x for x in A]))		
+	print(np.array([x for x in T]))
+	#Get coordinates of max value in matrix
+	starti, startj = np.unravel_index(np.argmax(A), np.shape(A))
+	i, j = starti, startj
+	print(i, j)
+	while (A[i][j] > 0):
 		if (T[i][j]) == 0:
-			aligned[1][i-1] = 4
+			str2 += str(4)
 			i -= 1
 		elif (T[i][j]) == 1:
-			aligned[0][i-1] = 4
+			str1 += str(4)
 			j -= 1
 		else:
-			aligned[1][i-1] = seq2[j-1]
+			str1 += str(seq1[i-1])
+			str2 += str(seq2[j-1])
 			i -= 1
 			j -= 1
-	return aligned
+	aligned = np.array([[4 for _ in range(i+len(str1)+l1-starti)] for _ in range(2)])
+	print(seq1[:l1-starti])
+	print(str1[::-1])
+	print(seq1[i:])
+	print(seq2[:startj])
+	print(str2[::-1])
+	print(seq2[j:])
+	print(np.array([x for x in aligned]))
+	sys.exit()
+	#return aligned
 
 #Hamming distance function
 cpdef distance(seq1, seq2):

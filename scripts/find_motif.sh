@@ -9,7 +9,6 @@ helpFunction()
 	echo -e "Optional arguments:"
 	echo -e "\t-s, --sequential\tRun sequentially"
 	echo -e "\t-p, --parallel\tRun in parallel"
-	echo -e "\t-v, --verbose"
 	echo -e "\t-h, --help\n"
 	echo "Example run call below:"
 	echo ""
@@ -23,7 +22,6 @@ if [ $# -eq 0 ]; then
 fi
 
 WIDTH=-1
-VERBOSE=0
 PARALLEL=0
 SEQUENTIAL=0
 
@@ -38,9 +36,6 @@ while [ "$1" != "" ]; do
 								;;
 		-t | --type )			shift
 								TYPE=$1
-								;;
-		-v | --verbose )		shift
-								VERBOSE=1
 								;;
 		-s | --sequential )		shift
 								SEQUENTIAL=1
@@ -79,14 +74,18 @@ if (($WIDTH < 1))
 	exit 1
 fi
 #check width is greater than sequence lengths
-while IFS= read -r line; 
-do 
-	if ((${#line} < $WIDTH))
-	then
-	echo "Error: width ${WIDTH} is smaller than a sequence length"
-	exit 1
-fi; 
-done < ${INPUT}
+if [[ $TYPE = "FASTA" ]]
+then
+	while IFS= read -r line; 
+	do 
+		if ((${#line} < $WIDTH))
+		then
+		echo "Error: width ${WIDTH} is greater than the length of a sequence"
+		exit 1
+	fi; 
+	done < ${INPUT}
+fi
+
 if [[ $TYPE != "BED" && $TYPE != "FASTA" && $TYPE != "GENES" ]]
 then
 	echo "Error: Provided file type not supported"
@@ -99,9 +98,7 @@ parallelRun()
 {
 	mkdir -p "${INPUT::-4}_splits"
 	#SHUFFLE
-	if (( VERBOSE )); then
-		echo "Splitting data"
-	fi
+	echo "Splitting data"
 	#Randomize sequence order in case nearby sequences are similar
 	shuf ${INPUT} > "${INPUT::-4}_shuffled.txt"
 	#PARTITION
@@ -116,24 +113,31 @@ parallelRun()
 		rm $last_file
 	fi;
 	#CREATE JOB ARRAY OF PARTITIONS
-	if (( VERBOSE )); then
-		echo "Creating job array"
-	fi
+	echo "Creating job array"
 	ls -d "${INPUT::-4}_splits"/*.txt >> jobs.txt
 	#SUBMIT JOBS
-	if (( VERBOSE )); then
-		echo "Submitting jobs..."
-	fi
+	echo "Submitting jobs..."
 	NUM_JOBS=$(wc -l <jobs.txt)
 	sed "s/REPLACE/${NUM_JOBS}/g" template.sb > jobs.sb
+	#Clear old error logs
+	if [ $(grep err logs/* | wc -l) -gt 0 ]
+	then
+		rm logs/*err*
+	fi
 	sbatch --wait jobs.sb ${WIDTH}
-	if (( VERBOSE )); then
-		echo "All jobs ended, logs written to logs/"
-	fi
+	#Check that all jobs completed
+	for file in logs/*err*;
+	do
+		if [ $(wc -l <$file) -gt 0 ]
+		then
+			echo "A job did not complete. Error logs written to logs/"
+			exit 1
+		fi
+	done
+	rm logs/*err*
+	echo "All jobs ended, logs written to logs/"
 	#MERGE OUTPUTS AND RUN SEQUENTIAL GIBBS
-	if (( VERBOSE )); then
-		echo "Running merge..."
-	fi
+	echo "Running merge..."
 	total_lines=$(wc -l <${INPUT})
 	python merge.py jobs.txt ${INPUT} ${total_lines} ${WIDTH}
 	rm jobs.txt
@@ -172,10 +176,16 @@ fi
 if [[ $TYPE = "BED" ]]
 then
 	#Check BED is correctly formatted using bedtools quick command
-
+	echo "Merging bed coordinates..."
+	sort -k 1,1 -k 2,2n ${INPUT} | bedtools merge -i stdin > merged.bed
 	#Download hg38 fasta
-	wget -nc ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-	bedtools getfasta -fi hg38.fa.gz -bed ${INPUT} > "${INPUT::-4}.fa"
+	if [ $(ls hg38.fa | wc -l) -eq 0 ]
+	then
+		wget -nc ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+		gunzip hg38.fa.gz
+	fi
+	bedtools getfasta -fi hg38.fa -bed merged.bed > "${INPUT::-4}.fa"
+	rm merged.bed
 	sh preprocess.sh "${INPUT::-4}.fa"
 	#Redirect input var to processed fasta
 	INPUT="${INPUT::-4}.txt" 
