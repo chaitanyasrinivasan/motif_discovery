@@ -228,13 +228,14 @@ def plotLoss(fasta, loss):
 	print("Entropy function written to " + str(fasta)[:-4]+"_loss.png")
 
 
-def main(fasta, size):
+def main(fasta, size, mode):
 	w = int(size) #Length of Motif
 	print("Parsing from " + fasta)
 	seqs, freq, seqLengths = parse(np.loadtxt(fasta, dtype="str"))
-	with open(str(fasta)[:-4]+".freq", "wb") as f:
-		pickle.dump(freq, f)
-		print("Dictionary written to "+str(fasta)[:-4]+".freq")
+	if (mode == "divide"):
+		with open(str(fasta)[:-4]+".freq", "wb") as f:
+			pickle.dump(freq, f)
+			print("Dictionary written to "+str(fasta)[:-4]+".freq")
 	print("Initializing")
 	P, A, tStar, nStar, k, index, z = init(seqs, w, freq, seqLengths)
 	print("Searching")
@@ -242,10 +243,11 @@ def main(fasta, size):
 	S, Anew, loss = search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter)
 	plotLogo(fasta, Anew, w)
 	plotLoss(fasta, loss)
-	np.savetxt(str(fasta)[:-4]+".matrix", Anew)
-	print("Alignment matrix written to "+str(fasta)[:-4]+".matrix")
+	if (mode == "divide"):
+		np.savetxt(str(fasta)[:-4]+".matrix", Anew)
+		print("Alignment matrix written to "+str(fasta)[:-4]+".matrix")
 	print("Done")
 
 
 if __name__ == "__main__":
-	main(sys.argv[1], sys.argv[2])
+	main(sys.argv[1], sys.argv[2], sys.argv[3])

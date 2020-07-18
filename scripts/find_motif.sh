@@ -74,8 +74,7 @@ if (($WIDTH < 1))
 	exit 1
 fi
 #check width is greater than sequence lengths
-if [[ $TYPE = "FASTA" ]]
-then
+scanSeqs() {
 	while IFS= read -r line; 
 	do 
 		if ((${#line} < $WIDTH))
@@ -84,6 +83,11 @@ then
 		exit 1
 	fi; 
 	done < ${INPUT}
+}
+
+if [[ $TYPE = "FASTA" ]]
+then
+	scanSeqs
 fi
 
 if [[ $TYPE != "BED" && $TYPE != "FASTA" && $TYPE != "GENES" ]]
@@ -98,7 +102,7 @@ parallelRun()
 {
 	mkdir -p "${INPUT::-4}_splits"
 	#SHUFFLE
-	echo "Splitting data"
+	echo "Splitting data..."
 	#Randomize sequence order in case nearby sequences are similar
 	shuf ${INPUT} > "${INPUT::-4}_shuffled.txt"
 	#PARTITION
@@ -113,7 +117,7 @@ parallelRun()
 		rm $last_file
 	fi;
 	#CREATE JOB ARRAY OF PARTITIONS
-	echo "Creating job array"
+	echo "Creating job array..."
 	ls -d "${INPUT::-4}_splits"/*.txt >> jobs.txt
 	#SUBMIT JOBS
 	echo "Submitting jobs..."
@@ -140,79 +144,85 @@ parallelRun()
 	echo "Running merge..."
 	total_lines=$(wc -l <${INPUT})
 	python merge.py jobs.txt ${INPUT} ${total_lines} ${WIDTH}
-	rm jobs.txt
-	rm jobs.sb
-	rm "${INPUT::-4}_shuffled.txt"
+	#Program compelete, clean-up
+	rm jobs.txt jobs.sb "${INPUT::-4}_shuffled.txt"
 	rm -r "${INPUT::-4}_splits"
 }
 
 ############### DETERMINE MODE ##########################
-GRAN=20 #empirically determined
-if [[ $TYPE = "FASTA" ]]
-then
+
+startAnalysis() {
+	GRAN=20 #empirically determined, see motif_discovery/performance
 	#Automatically infer if parallel or sequential is faster
 	if [ $SEQUENTIAL -eq $PARALLEL ]
 	then
 		if [ $(wc -l <${INPUT}) -lt $GRAN ]
 		then
-			python run_gibbs.py -i $INPUT -w $WIDTH
-			exit 1
+			python run_gibbs.py -i $INPUT -w $WIDTH -m conquer
+			exit 0
 		else
 			parallelRun
-			exit 1
+			exit 0
 		fi
 	fi
 	if (( SEQUENTIAL ))
 	then
-		python run_gibbs.py -i $INPUT -w $WIDTH
-		exit 1
+		python run_gibbs.py -i $INPUT -w $WIDTH -m conquer
+		exit 0
 	fi
 	if (( PARALLEL ))
 	then
 		parallelRun
-		exit 1
+		exit 0
 	fi
-fi
-if [[ $TYPE = "BED" ]]
-then
+}
+
+############# BED TO FASTA ####################################
+
+bedToFasta() {
 	#Check BED is correctly formatted using bedtools quick command
 	echo "Merging bed coordinates..."
 	sort -k 1,1 -k 2,2n ${INPUT} | bedtools merge -i stdin > merged.bed
 	#Download hg38 fasta
-	if [ $(ls hg38.fa | wc -l) -eq 0 ]
+	if [ ! -f hg38.fa ]
 	then
 		wget -nc ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
 		gunzip hg38.fa.gz
 	fi
 	bedtools getfasta -fi hg38.fa -bed merged.bed > "${INPUT::-4}.fa"
+	#Clean up
 	rm merged.bed
+	gzip hg38.fa
 	sh preprocess.sh "${INPUT::-4}.fa"
 	#Redirect input var to processed fasta
-	INPUT="${INPUT::-4}.txt" 
-	#Automatically infer if parallel or sequential is faster
-	if [ $SEQUENTIAL -eq $PARALLEL ]
-	then
-		if [ $(wc -l <${INPUT}) -lt $GRAN ]
-		then
-			python run_gibbs.py -i $INPUT -w $WIDTH
-			exit 1
-		else
-			parallelRun
-			exit 1
-		fi
-	fi
-	if (( SEQUENTIAL ))
-	then
-		python run_gibbs.py -i $INPUT -w $WIDTH
-		exit 1
-	fi
-	if (( PARALLEL ))
-	then
-		parallelRun
-		exit 1
-	fi
+	INPUT="${INPUT::-4}.txt" 	
+}
+
+###################  MAIN ####################################
+
+if [[ $TYPE = "FASTA" ]]
+then
+	startAnalysis
 fi
+
+if [[ $TYPE = "BED" ]]
+then
+	bedToFasta
+	#Quality check
+	scanSeqs
+	#Run motif discovery
+	startAnalysis
+fi
+
 if [[ $TYPE = "GENE" ]]
 then
-	sh gene_map.sh ${INPUT}
+	#Map genes to regulatory coordinates in hg38
+	sh gene_map.sh ${INPUT} #outputs ../data/introns_and_flanks/
+	#Map bed to fasta
+	INPUT="${INPUT::-4}.bed"
+	bedToFasta
+	#Quality check
+	scanSeqs
+	#Run motif discovery
+	startAnalysis
 fi

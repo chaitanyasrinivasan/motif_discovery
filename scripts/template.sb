@@ -10,4 +10,4 @@
 #SBATCH --array=1-REPLACE
 
 DATA=$(awk "NR==${SLURM_ARRAY_TASK_ID}" jobs.txt)
-python run_gibbs.py -i $DATA -w $1
+python run_gibbs.py -i $DATA -w $1 -m divide

@@ -1,9 +1,14 @@
 #!/bin/bash
 
-wget -nc ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_33/gencode.v33.annotation.gff3.gz
+#Download GENCODE v33 hg38 gene coordinates
+if [ ! -f gencode.v33.annotation.gff3 ]
+then
+	wget -nc ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_33/gencode.v33.annotation.gff3.gz
+	gunzip gencode.v33.annotation.gff3.gz
+fi
 
 cd ../data
-mkdir -p genes exons exons_merged introns genes_20KBflank introns_and_flanks
+mkdir -p genes exons exons_merged introns genes_20KBflank
 
 #GET GENE AND EXON COORDINATES
 file=$1
@@ -14,7 +19,7 @@ python ../scripts/get_gene_and_exon_coordinates.py $file
 mv *genes.bed genes/
 mv *exons.bed exons/
 #MERGE, SUBTRACT EXONS FROM GENE, AND FLANK GENE 20KB
-
+#TO CAPTURE REGULATORY ACTIVITY
 echo "Merging exons..."
 
 for file in exons/*_exons.bed;
@@ -42,7 +47,7 @@ for ((i=0; i<${arraylength}; i++));
 do
 	sort -k 1,1 -k 2,2n ${genes[i]} > "${genes[i]::-4}_sorted.bed"
 	bedtools subtract -a "${genes[i]::-4}_sorted.bed" -b ${exons[i]}  > "${genes[i]::-9}introns.bed"
-	bedtools flank -i "${genes[i]::-4}_sorted.bed" -g ../../../hg38.chrom.sizes.sorted -b 20000 | bedtools subtract -a stdin -b "${genes[i]::-4}_sorted.bed" > "${genes[i]::-4}_20KBflank.bed"
+	bedtools flank -i "${genes[i]::-4}_sorted.bed" -g ../scripts/hg38.chrom.sizes.sorted -b 20000 | bedtools subtract -a stdin -b "${genes[i]::-4}_sorted.bed" > "${genes[i]::-4}_20KBflank.bed"
 done
 rm genes/*genes_sorted.bed
 mv genes/*introns.bed introns/
@@ -69,9 +74,12 @@ for ((i=0; i<${arraylength}; i++));
 do
 	cat ${flanks[i]} ${introns[i]} | sort -k 1,1 -k 2,2n | bedtools merge -i stdin > "${introns[i]::-4}_and_flanks.bed"
 done
-mv introns/*_and_flanks.bed introns_and_flanks/
+## FIX THIS BUG
+mv introns/*_and_flanks.bed "${file::-4}.bed"
 
-
-
+#CLEANUP AND COMPLETE
+gzip ../scripts/gencode.v33.annotation.gff3
+rm -r genes exons exons_merged introns genes_20KBflank
 echo "Done."
+exit 0
 

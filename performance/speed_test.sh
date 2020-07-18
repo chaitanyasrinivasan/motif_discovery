@@ -7,7 +7,7 @@ SIZE=$(wc -l <${FILE})
 for (( i=5; i<=$SIZE; ++i ))
 do
 	head -n $i $FILE > ../data/data.txt
-	(time ./gibbs_parallel.sh -i ../data/data.txt -w 10 -s) 2>> ../performance/sequential_metrics.txt
-	(time ./gibbs_parallel.sh -i ../data/data.txt -w 10 -p) 2>> ../performance/parallel_metrics.txt
+	(time ./gibbs_parallel.sh -i ../data/data.txt -w 10 -t FASTA -s) 2>> ../performance/sequential_metrics.txt
+	(time ./gibbs_parallel.sh -i ../data/data.txt -w 10 -t FASTA -p) 2>> ../performance/parallel_metrics.txt
 done
 
