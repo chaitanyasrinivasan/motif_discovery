@@ -1,17 +1,19 @@
 import numpy as np
+import cygibbs
 cimport numpy as np
-import BW
 import sys
 
+'''
+This program performs a polytime progressive alignment by iteratively merging
+pairwise local alignments of sequences.
+'''
 
-#Takes in two sequences and their length, l1 >= l2
+#Takes in two sequences and their lengths, l1 >= l2
 #Returns the pairwise local alignment
 cpdef pairwise_align(seq1, seq2, l1, l2):
-	print(np.array([x for x in seq1]))
-	print(np.array([x for x in seq2]))
 	cdef int match = 5
 	cdef int mismatch = -1
-	cdef int gap = -4
+	cdef int gap = -4 
 	cdef long [:,:] A = np.empty(shape=(l1+1, l2+1), dtype=int)
 	cdef long [:,:] T = np.zeros(shape=(l1+1, l2+1), dtype=int)
 	cdef int i
@@ -23,13 +25,13 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 	cdef str str2 = ""
 	cdef int starti
 	cdef int startj
-	#INITIALIZE
+	#INITIALIZE ALIGNMENT MATRIX
 	A[0][0] = 0
 	for j in range(1,l2+1):
 		A[0][j] = 0
 	for i in range(1, l1+1):
 		A[i][0] = 0
-	#RECURRENCE
+	#GET OPTIMAL ALIGNMENT SCORE
 	for i in range(1, l1+1):
 		for j in range(1, l2+1):
 			if seq1[i-1] == seq2[j-1]:
@@ -39,35 +41,26 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score, 0])
 			A[i][j] = np.amax(vals)
 			T[i][j] = np.argmax(vals) #0, vertical, 1 horizontal, 2 diagonal
-	#TRACEBACK LOCAL ALIGNMENT
-	print(np.array([x for x in A]))		
-	print(np.array([x for x in T]))
 	#Get coordinates of max value in matrix
-	starti, startj = np.unravel_index(np.argmax(A), np.shape(A))
-	i, j = starti, startj
-	print(i, j)
-	while (A[i][j] > 0):
-		if (T[i][j]) == 0:
-			str2 += str(4)
-			i -= 1
-		elif (T[i][j]) == 1:
-			str1 += str(4)
-			j -= 1
-		else:
-			str1 += str(seq1[i-1])
-			str2 += str(seq2[j-1])
-			i -= 1
-			j -= 1
-	aligned = np.array([[4 for _ in range(i+len(str1)+l1-starti)] for _ in range(2)])
-	print(seq1[:l1-starti])
-	print(str1[::-1])
-	print(seq1[i:])
-	print(seq2[:startj])
-	print(str2[::-1])
-	print(seq2[j:])
-	print(np.array([x for x in aligned]))
-	sys.exit()
-	#return aligned
+	i, j = np.unravel_index(np.argmax(A), np.shape(A))
+	#readjust indices to read from seq1, seq2
+	i -= 1
+	j -= 1
+	if (i >= j):
+		offset = i-j
+		aligned = np.array([[4 for _ in range(max(l1, offset+l2))] for _ in range(2)])
+		for k in range(l1):
+			aligned[0][k] = seq1[k]
+		for k in range(l2):
+			aligned[1][k+offset] = seq2[k]
+	else:
+		offset = j-i
+		aligned = np.array([[4 for _ in range(max(l1+offset, l2))] for _ in range(2)])
+		for k in range(l1):
+			aligned[0][k+offset] = seq1[k]
+		for k in range(l2):
+			aligned[1][k] = seq2[k]
+	return aligned
 
 #Hamming distance function
 cpdef distance(seq1, seq2):
@@ -102,15 +95,14 @@ cpdef get_pairs(seqs, seqLengths):
 	for i in range(len(seqs)):
 		if len(dists) == (len(seqs) -1):
 			oddSeq = i
-		if (i in dists):
-			break
-		minVal = len(seqs[0])+1
-		for j in range(len(seqs)):
-			if (i != j and distances[i][j] < minVal and j not in dists):
-				minVal = distances[i][j]
-				minArg = j
-		dists[i] = minArg
-		dists[minArg] = i
+		if (i not in dists):
+			minVal = len(seqs[0])+1 #unobtainable value
+			for j in range(len(seqs)):
+				if (i != j and distances[i][j] < minVal and j not in dists):
+					minVal = distances[i][j]
+					minArg = j
+			dists[i] = minArg
+			dists[minArg] = i
 	return dists, oddSeq
 
 #Perform alignment of two aligned sequence sets
@@ -146,18 +138,13 @@ cpdef merge_align(align1, align2, l1, l2):
 			vals = np.array([A[i-1][j]+gap, A[i][j-1]+gap, A[i-1][j-1]+score])
 			A[i][j] = max(vals)
 			T[i][j] = np.argmax(vals) #0, vertical, 1 horizontal, 2 diagonal
-	print(np.array([x for x in A]))
-	print(np.array([x for x in T]))
 	#TRACEBACK
-
 	i, j = np.argmax(A[:,l2]), l2
 	aligned = np.array([[4 for _ in range(l1+(l2-i+1))] for _ in range(len(align1)+len(align2))])
 	for l in range(len(align1)):
 		for m in range(i-1, l1):
 			aligned[l][m+(l2-i+1)] = align1[l][m]
 	while (i > 0):
-		print(i, j)
-		print(np.array([x for x in aligned]))
 		if (T[i][j] == 0):
 			for m in range(len(align2)):
 				aligned[m+len(align1)][i-1] = align2[m][j-1]
@@ -173,33 +160,9 @@ cpdef merge_align(align1, align2, l1, l2):
 				aligned[m+len(align1)][i-1] = align2[m][j-1]
 			i -= 1
 			j -= 1
-	print(np.array([x for x in align1]))
-	print(np.array([x for x in align2]))
-	print(np.array([x for x in aligned]))
-	sys.exit()
 	return aligned
 
-cpdef result(seqList, lengthList):
-	cdef list vals
-	cdef list lengths
-	cdef int i
-	if (len(seqList) == 1):
-		return seqList.pop(0)
-	else:
-		vals = list()
-		lengths = list()
-		for i in range(int(len(seqList)/2)):
-			if (lengthList[i] >= lengthList[i+1]):
-				vals.append(merge_align(seqList[i], seqList[i+1], lengthList[i], lengthList[i+1]))
-			else:
-				vals.append(merge_align(seqList[i+1], seqList[i], lengthList[i+1], lengthList[i]))
-			lengths.append(len(vals[-1][0]))
-		return result(vals, lengths)
-
-def main(fasta):
-	#0-A, 1-C, 2-G, 3-T, 4-GAP
-	seqs, seqLengths = BW.parse(fasta)
-	dists, oddSeq = get_pairs(seqs, seqLengths)
+cpdef build_roots(seqs, dists, seqLengths, oddSeq):
 	noDoubles = set()
 	seqList = list()
 	lengthList = list()
@@ -214,7 +177,34 @@ def main(fasta):
 			noDoubles.add(dists[key])
 	if (oddSeq != -1):
 		seqList.append(seqs[oddSeq])
-	multi_align = result(seqList, lengthList)
+	return seqList, lengthList
+
+cpdef merge_leaves(seqList, lengthList):
+	cdef list vals
+	cdef list lengths
+	cdef int i
+	if (len(seqList) == 1):
+		return seqList.pop(0)
+	else:
+		vals = list()
+		lengths = list()
+		for i in range(int(len(seqList)/2)):
+			if (lengthList[i] >= lengthList[i+1]):
+				vals.append(merge_align(seqList[2*i], seqList[2*i+1], lengthList[2*i], lengthList[2*i+1]))
+			else:
+				vals.append(merge_align(seqList[2*i+1], seqList[2*i], lengthList[2*i+1], lengthList[2*i]))
+			lengths.append(len(vals[-1][0]))
+		if (len(seqList) % 2 == 1): #add merge remaining sequence
+			vals.append(seqList[-1])
+			lengths.append(len(vals[-1][0]))
+		return merge_leaves(vals, lengths)
+
+def main(fasta):
+	#0-A, 1-C, 2-G, 3-T, 4-GAP
+	seqs, freq, seqLengths = cygibbs.parse(np.loadtxt(fasta, dtype="str"))
+	dists, oddSeq = get_pairs(seqs, seqLengths)
+	seqList, lengthList = build_roots(seqs, dists, seqLengths, oddSeq)
+	multi_align = merge_leaves(seqList, lengthList)
 	print(np.array([x for x in multi_align]))
 	#return multi_align
 

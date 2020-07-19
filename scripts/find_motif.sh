@@ -217,6 +217,7 @@ fi
 
 if [[ $TYPE = "GENES" ]]
 then
+	#Change naming scheme
 	#Map genes to regulatory coordinates in hg38
 	sh gene_map.sh ${INPUT} 
 	#Map bed to fasta

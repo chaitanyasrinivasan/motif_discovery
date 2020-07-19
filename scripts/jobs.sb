@@ -7,7 +7,7 @@
 #SBATCH --mem=4G
 #SBATCH --error=logs/motif_find_%A_%a.err.txt
 #SBATCH --output=logs/motif_find_%A_%a.out.txt
-#SBATCH --array=1-31
+#SBATCH --array=1-62
 
 DATA=$(awk "NR==${SLURM_ARRAY_TASK_ID}" jobs.txt)
 python run_gibbs.py -i $DATA -w $1 -m divide

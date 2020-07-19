@@ -2256,8 +2256,8 @@ static PyObject *contiguous = 0;
 static PyObject *indirect_contiguous = 0;
 static int __pyx_memoryview_thread_locks_used;
 static PyThread_type_lock __pyx_memoryview_thread_locks[8];
-static PyObject *__pyx_f_7cygibbs_count(PyObject *); /*proto*/
-static PyObject *__pyx_f_7cygibbs_parse(PyObject *); /*proto*/
+static PyObject *__pyx_f_7cygibbs_count(PyObject *, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_7cygibbs_parse(PyObject *, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_f_7cygibbs_propensity(PyObject *, int, PyObject *, PyObject *, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_f_7cygibbs_init(PyObject *, PyObject *, PyObject *, PyObject *); /*proto*/
 static PyObject *__pyx_f_7cygibbs_entropy(PyObject *, PyObject *); /*proto*/
@@ -2708,12 +2708,14 @@ static PyObject *__pyx_n_s_wb;
 static PyObject *__pyx_n_s_xlabel;
 static PyObject *__pyx_n_s_ylabel;
 static PyObject *__pyx_n_s_z;
-static PyObject *__pyx_pf_7cygibbs_propensity(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A, int __pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_freq); /* proto */
-static PyObject *__pyx_pf_7cygibbs_2getOptSeq(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w); /* proto */
-static PyObject *__pyx_pf_7cygibbs_4search(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_A, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_index, PyObject *__pyx_v_z, PyObject *__pyx_v_seqs, PyObject *__pyx_v_freq, PyObject *__pyx_v_seqLengths, PyObject *__pyx_v_maxIter); /* proto */
-static PyObject *__pyx_pf_7cygibbs_6plotLogo(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_alignment, PyObject *__pyx_v_w); /* proto */
-static PyObject *__pyx_pf_7cygibbs_8plotLoss(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_loss); /* proto */
-static PyObject *__pyx_pf_7cygibbs_10main(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_size, PyObject *__pyx_v_mode); /* proto */
+static PyObject *__pyx_pf_7cygibbs_count(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_seq); /* proto */
+static PyObject *__pyx_pf_7cygibbs_2parse(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_stringSeqs); /* proto */
+static PyObject *__pyx_pf_7cygibbs_4propensity(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A, int __pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_freq); /* proto */
+static PyObject *__pyx_pf_7cygibbs_6getOptSeq(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w); /* proto */
+static PyObject *__pyx_pf_7cygibbs_8search(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_A, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_index, PyObject *__pyx_v_z, PyObject *__pyx_v_seqs, PyObject *__pyx_v_freq, PyObject *__pyx_v_seqLengths, PyObject *__pyx_v_maxIter); /* proto */
+static PyObject *__pyx_pf_7cygibbs_10plotLogo(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_alignment, PyObject *__pyx_v_w); /* proto */
+static PyObject *__pyx_pf_7cygibbs_12plotLoss(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_loss); /* proto */
+static PyObject *__pyx_pf_7cygibbs_14main(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_size, PyObject *__pyx_v_mode); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
@@ -2817,12 +2819,13 @@ static PyObject *__pyx_codeobj__41;
 /* "cygibbs.pyx":14
  * #Output: freq - a dictionary of column-wise frequencies
  * #Output: intList - a list of quaternarized nucleotide sequences
- * cdef count(seq):             # <<<<<<<<<<<<<<
+ * cpdef count(seq):             # <<<<<<<<<<<<<<
  * 	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}
  * 	cdef dict freq = {0:0, 1:0, 2:0, 3:0}
  */
 
-static PyObject *__pyx_f_7cygibbs_count(PyObject *__pyx_v_seq) {
+static PyObject *__pyx_pw_7cygibbs_1count(PyObject *__pyx_self, PyObject *__pyx_v_seq); /*proto*/
+static PyObject *__pyx_f_7cygibbs_count(PyObject *__pyx_v_seq, CYTHON_UNUSED int __pyx_skip_dispatch) {
   PyObject *__pyx_v_bases = 0;
   PyObject *__pyx_v_freq = 0;
   int __pyx_v_i;
@@ -2847,7 +2850,7 @@ static PyObject *__pyx_f_7cygibbs_count(PyObject *__pyx_v_seq) {
 
   /* "cygibbs.pyx":15
  * #Output: intList - a list of quaternarized nucleotide sequences
- * cdef count(seq):
+ * cpdef count(seq):
  * 	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}             # <<<<<<<<<<<<<<
  * 	cdef dict freq = {0:0, 1:0, 2:0, 3:0}
  * 	cdef int i
@@ -2862,7 +2865,7 @@ static PyObject *__pyx_f_7cygibbs_count(PyObject *__pyx_v_seq) {
   __pyx_t_1 = 0;
 
   /* "cygibbs.pyx":16
- * cdef count(seq):
+ * cpdef count(seq):
  * 	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}
  * 	cdef dict freq = {0:0, 1:0, 2:0, 3:0}             # <<<<<<<<<<<<<<
  * 	cdef int i
@@ -3007,7 +3010,7 @@ static PyObject *__pyx_f_7cygibbs_count(PyObject *__pyx_v_seq) {
   /* "cygibbs.pyx":14
  * #Output: freq - a dictionary of column-wise frequencies
  * #Output: intList - a list of quaternarized nucleotide sequences
- * cdef count(seq):             # <<<<<<<<<<<<<<
+ * cpdef count(seq):             # <<<<<<<<<<<<<<
  * 	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}
  * 	cdef dict freq = {0:0, 1:0, 2:0, 3:0}
  */
@@ -3030,15 +3033,55 @@ static PyObject *__pyx_f_7cygibbs_count(PyObject *__pyx_v_seq) {
   return __pyx_r;
 }
 
+/* Python wrapper */
+static PyObject *__pyx_pw_7cygibbs_1count(PyObject *__pyx_self, PyObject *__pyx_v_seq); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_1count(PyObject *__pyx_self, PyObject *__pyx_v_seq) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("count (wrapper)", 0);
+  __pyx_r = __pyx_pf_7cygibbs_count(__pyx_self, ((PyObject *)__pyx_v_seq));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7cygibbs_count(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_seq) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("count", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_f_7cygibbs_count(__pyx_v_seq, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("cygibbs.count", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
 /* "cygibbs.pyx":29
  * #			length of sequences (cannot be inferred without O(|seq|) work
  * #								since all rows equal dimensions)
- * cdef parse(stringSeqs):             # <<<<<<<<<<<<<<
+ * cpdef parse(stringSeqs):             # <<<<<<<<<<<<<<
  * 	cdef int maxSize = len(max(stringSeqs, key=len))
  * 	cdef int b = 4 # number of bases
  */
 
-static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
+static PyObject *__pyx_pw_7cygibbs_3parse(PyObject *__pyx_self, PyObject *__pyx_v_stringSeqs); /*proto*/
+static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs, CYTHON_UNUSED int __pyx_skip_dispatch) {
   int __pyx_v_maxSize;
   int __pyx_v_b;
   int __pyx_v_i;
@@ -3086,7 +3129,7 @@ static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
 
   /* "cygibbs.pyx":30
  * #								since all rows equal dimensions)
- * cdef parse(stringSeqs):
+ * cpdef parse(stringSeqs):
  * 	cdef int maxSize = len(max(stringSeqs, key=len))             # <<<<<<<<<<<<<<
  * 	cdef int b = 4 # number of bases
  * 	cdef int i
@@ -3111,7 +3154,7 @@ static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
   __pyx_v_maxSize = __pyx_t_4;
 
   /* "cygibbs.pyx":31
- * cdef parse(stringSeqs):
+ * cpdef parse(stringSeqs):
  * 	cdef int maxSize = len(max(stringSeqs, key=len))
  * 	cdef int b = 4 # number of bases             # <<<<<<<<<<<<<<
  * 	cdef int i
@@ -3268,7 +3311,7 @@ static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
  */
     __pyx_t_3 = __Pyx_GetItemInt(__pyx_v_stringSeqs, __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 0, 1, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 41, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_6 = __pyx_f_7cygibbs_count(__pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 41, __pyx_L1_error)
+    __pyx_t_6 = __pyx_f_7cygibbs_count(__pyx_t_3, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 41, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     if ((likely(PyTuple_CheckExact(__pyx_t_6))) || (PyList_CheckExact(__pyx_t_6))) {
@@ -3541,7 +3584,7 @@ static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
   /* "cygibbs.pyx":29
  * #			length of sequences (cannot be inferred without O(|seq|) work
  * #								since all rows equal dimensions)
- * cdef parse(stringSeqs):             # <<<<<<<<<<<<<<
+ * cpdef parse(stringSeqs):             # <<<<<<<<<<<<<<
  * 	cdef int maxSize = len(max(stringSeqs, key=len))
  * 	cdef int b = 4 # number of bases
  */
@@ -3572,6 +3615,45 @@ static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
   return __pyx_r;
 }
 
+/* Python wrapper */
+static PyObject *__pyx_pw_7cygibbs_3parse(PyObject *__pyx_self, PyObject *__pyx_v_stringSeqs); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_3parse(PyObject *__pyx_self, PyObject *__pyx_v_stringSeqs) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("parse (wrapper)", 0);
+  __pyx_r = __pyx_pf_7cygibbs_2parse(__pyx_self, ((PyObject *)__pyx_v_stringSeqs));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7cygibbs_2parse(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_stringSeqs) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("parse", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_f_7cygibbs_parse(__pyx_v_stringSeqs, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("cygibbs.parse", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
 /* "cygibbs.pyx":50
  * 	return np.array(intSeqs), val/np.sum(val), seqLengths
  * 
@@ -3580,7 +3662,7 @@ static PyObject *__pyx_f_7cygibbs_parse(PyObject *__pyx_v_stringSeqs) {
  * 	cdef double[:,:] P = np.empty(shape=(b, w))
  */
 
-static PyObject *__pyx_pw_7cygibbs_1propensity(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_5propensity(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static PyObject *__pyx_f_7cygibbs_propensity(PyObject *__pyx_v_A, int __pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_freq, CYTHON_UNUSED int __pyx_skip_dispatch) {
   int __pyx_v_b;
   __Pyx_memviewslice __pyx_v_P = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -3956,8 +4038,8 @@ static PyObject *__pyx_f_7cygibbs_propensity(PyObject *__pyx_v_A, int __pyx_v_w,
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7cygibbs_1propensity(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_7cygibbs_1propensity(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7cygibbs_5propensity(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_5propensity(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_A = 0;
   int __pyx_v_w;
   PyObject *__pyx_v_k = 0;
@@ -4034,14 +4116,14 @@ static PyObject *__pyx_pw_7cygibbs_1propensity(PyObject *__pyx_self, PyObject *_
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7cygibbs_propensity(__pyx_self, __pyx_v_A, __pyx_v_w, __pyx_v_k, __pyx_v_freq);
+  __pyx_r = __pyx_pf_7cygibbs_4propensity(__pyx_self, __pyx_v_A, __pyx_v_w, __pyx_v_k, __pyx_v_freq);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7cygibbs_propensity(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A, int __pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_freq) {
+static PyObject *__pyx_pf_7cygibbs_4propensity(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A, int __pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_freq) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -4787,7 +4869,7 @@ static PyObject *__pyx_f_7cygibbs_entropy(PyObject *__pyx_v_A, PyObject *__pyx_v
  * 	cdef int o
  */
 
-static PyObject *__pyx_pw_7cygibbs_3getOptSeq(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_7getOptSeq(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static PyObject *__pyx_f_7cygibbs_getOptSeq(PyObject *__pyx_v_P, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w, CYTHON_UNUSED int __pyx_skip_dispatch) {
   __Pyx_memviewslice __pyx_v_pdf = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_v_o;
@@ -5309,8 +5391,8 @@ static PyObject *__pyx_f_7cygibbs_getOptSeq(PyObject *__pyx_v_P, PyObject *__pyx
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7cygibbs_3getOptSeq(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_7cygibbs_3getOptSeq(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7cygibbs_7getOptSeq(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_7getOptSeq(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_P = 0;
   PyObject *__pyx_v_tStar = 0;
   PyObject *__pyx_v_nStar = 0;
@@ -5387,14 +5469,14 @@ static PyObject *__pyx_pw_7cygibbs_3getOptSeq(PyObject *__pyx_self, PyObject *__
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7cygibbs_2getOptSeq(__pyx_self, __pyx_v_P, __pyx_v_tStar, __pyx_v_nStar, __pyx_v_w);
+  __pyx_r = __pyx_pf_7cygibbs_6getOptSeq(__pyx_self, __pyx_v_P, __pyx_v_tStar, __pyx_v_nStar, __pyx_v_w);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7cygibbs_2getOptSeq(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w) {
+static PyObject *__pyx_pf_7cygibbs_6getOptSeq(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5428,7 +5510,7 @@ static PyObject *__pyx_pf_7cygibbs_2getOptSeq(CYTHON_UNUSED PyObject *__pyx_self
  * 	cdef int y
  */
 
-static PyObject *__pyx_pw_7cygibbs_5search(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_9search(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static PyObject *__pyx_f_7cygibbs_search(PyObject *__pyx_v_P, PyObject *__pyx_v_A, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_index, PyObject *__pyx_v_z, PyObject *__pyx_v_seqs, PyObject *__pyx_v_freq, PyObject *__pyx_v_seqLengths, PyObject *__pyx_v_maxIter, CYTHON_UNUSED int __pyx_skip_dispatch) {
   int __pyx_v_r;
   int __pyx_v_y;
@@ -6366,8 +6448,8 @@ static PyObject *__pyx_f_7cygibbs_search(PyObject *__pyx_v_P, PyObject *__pyx_v_
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7cygibbs_5search(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_7cygibbs_5search(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7cygibbs_9search(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7cygibbs_9search(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_P = 0;
   PyObject *__pyx_v_A = 0;
   PyObject *__pyx_v_tStar = 0;
@@ -6532,14 +6614,14 @@ static PyObject *__pyx_pw_7cygibbs_5search(PyObject *__pyx_self, PyObject *__pyx
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7cygibbs_4search(__pyx_self, __pyx_v_P, __pyx_v_A, __pyx_v_tStar, __pyx_v_nStar, __pyx_v_w, __pyx_v_k, __pyx_v_index, __pyx_v_z, __pyx_v_seqs, __pyx_v_freq, __pyx_v_seqLengths, __pyx_v_maxIter);
+  __pyx_r = __pyx_pf_7cygibbs_8search(__pyx_self, __pyx_v_P, __pyx_v_A, __pyx_v_tStar, __pyx_v_nStar, __pyx_v_w, __pyx_v_k, __pyx_v_index, __pyx_v_z, __pyx_v_seqs, __pyx_v_freq, __pyx_v_seqLengths, __pyx_v_maxIter);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7cygibbs_4search(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_A, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_index, PyObject *__pyx_v_z, PyObject *__pyx_v_seqs, PyObject *__pyx_v_freq, PyObject *__pyx_v_seqLengths, PyObject *__pyx_v_maxIter) {
+static PyObject *__pyx_pf_7cygibbs_8search(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_P, PyObject *__pyx_v_A, PyObject *__pyx_v_tStar, PyObject *__pyx_v_nStar, PyObject *__pyx_v_w, PyObject *__pyx_v_k, PyObject *__pyx_v_index, PyObject *__pyx_v_z, PyObject *__pyx_v_seqs, PyObject *__pyx_v_freq, PyObject *__pyx_v_seqLengths, PyObject *__pyx_v_maxIter) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -6574,9 +6656,9 @@ static PyObject *__pyx_pf_7cygibbs_4search(CYTHON_UNUSED PyObject *__pyx_self, P
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7cygibbs_7plotLogo(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_7cygibbs_7plotLogo = {"plotLogo", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_7plotLogo, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_7cygibbs_7plotLogo(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7cygibbs_11plotLogo(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_7cygibbs_11plotLogo = {"plotLogo", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_11plotLogo, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_7cygibbs_11plotLogo(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_fasta = 0;
   PyObject *__pyx_v_alignment = 0;
   PyObject *__pyx_v_w = 0;
@@ -6642,14 +6724,14 @@ static PyObject *__pyx_pw_7cygibbs_7plotLogo(PyObject *__pyx_self, PyObject *__p
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7cygibbs_6plotLogo(__pyx_self, __pyx_v_fasta, __pyx_v_alignment, __pyx_v_w);
+  __pyx_r = __pyx_pf_7cygibbs_10plotLogo(__pyx_self, __pyx_v_fasta, __pyx_v_alignment, __pyx_v_w);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7cygibbs_6plotLogo(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_alignment, PyObject *__pyx_v_w) {
+static PyObject *__pyx_pf_7cygibbs_10plotLogo(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_alignment, PyObject *__pyx_v_w) {
   PyObject *__pyx_v_pwm = NULL;
   long __pyx_v_pseudo;
   PyObject *__pyx_v_j = NULL;
@@ -7016,9 +7098,9 @@ static PyObject *__pyx_pf_7cygibbs_6plotLogo(CYTHON_UNUSED PyObject *__pyx_self,
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7cygibbs_9plotLoss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_7cygibbs_9plotLoss = {"plotLoss", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_9plotLoss, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_7cygibbs_9plotLoss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7cygibbs_13plotLoss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_7cygibbs_13plotLoss = {"plotLoss", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_13plotLoss, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_7cygibbs_13plotLoss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_fasta = 0;
   PyObject *__pyx_v_loss = 0;
   int __pyx_lineno = 0;
@@ -7073,14 +7155,14 @@ static PyObject *__pyx_pw_7cygibbs_9plotLoss(PyObject *__pyx_self, PyObject *__p
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7cygibbs_8plotLoss(__pyx_self, __pyx_v_fasta, __pyx_v_loss);
+  __pyx_r = __pyx_pf_7cygibbs_12plotLoss(__pyx_self, __pyx_v_fasta, __pyx_v_loss);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7cygibbs_8plotLoss(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_loss) {
+static PyObject *__pyx_pf_7cygibbs_12plotLoss(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_loss) {
   PyObject *__pyx_v_iters = NULL;
   PyObject *__pyx_v_fig = NULL;
   PyObject *__pyx_v_ax = NULL;
@@ -7409,9 +7491,9 @@ static PyObject *__pyx_pf_7cygibbs_8plotLoss(CYTHON_UNUSED PyObject *__pyx_self,
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7cygibbs_11main(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_7cygibbs_11main = {"main", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_11main, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_7cygibbs_11main(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7cygibbs_15main(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_7cygibbs_15main = {"main", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_15main, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_7cygibbs_15main(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_fasta = 0;
   PyObject *__pyx_v_size = 0;
   PyObject *__pyx_v_mode = 0;
@@ -7477,14 +7559,14 @@ static PyObject *__pyx_pw_7cygibbs_11main(PyObject *__pyx_self, PyObject *__pyx_
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7cygibbs_10main(__pyx_self, __pyx_v_fasta, __pyx_v_size, __pyx_v_mode);
+  __pyx_r = __pyx_pf_7cygibbs_14main(__pyx_self, __pyx_v_fasta, __pyx_v_size, __pyx_v_mode);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7cygibbs_10main(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_size, PyObject *__pyx_v_mode) {
+static PyObject *__pyx_pf_7cygibbs_14main(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_fasta, PyObject *__pyx_v_size, PyObject *__pyx_v_mode) {
   PyObject *__pyx_v_w = NULL;
   PyObject *__pyx_v_seqs = NULL;
   PyObject *__pyx_v_freq = NULL;
@@ -7576,7 +7658,7 @@ static PyObject *__pyx_pf_7cygibbs_10main(CYTHON_UNUSED PyObject *__pyx_self, Py
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_f_7cygibbs_parse(__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 234, __pyx_L1_error)
+  __pyx_t_3 = __pyx_f_7cygibbs_parse(__pyx_t_4, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 234, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   if ((likely(PyTuple_CheckExact(__pyx_t_3))) || (PyList_CheckExact(__pyx_t_3))) {
@@ -24563,9 +24645,11 @@ static PyTypeObject __pyx_type___pyx_memoryviewslice = {
 };
 
 static PyMethodDef __pyx_methods[] = {
-  {"propensity", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_1propensity, METH_VARARGS|METH_KEYWORDS, 0},
-  {"getOptSeq", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_3getOptSeq, METH_VARARGS|METH_KEYWORDS, 0},
-  {"search", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_5search, METH_VARARGS|METH_KEYWORDS, 0},
+  {"count", (PyCFunction)__pyx_pw_7cygibbs_1count, METH_O, 0},
+  {"parse", (PyCFunction)__pyx_pw_7cygibbs_3parse, METH_O, 0},
+  {"propensity", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_5propensity, METH_VARARGS|METH_KEYWORDS, 0},
+  {"getOptSeq", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_7getOptSeq, METH_VARARGS|METH_KEYWORDS, 0},
+  {"search", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7cygibbs_9search, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -25720,7 +25804,7 @@ if (!__Pyx_RefNanny) {
  * 	pwm = np.empty(shape=(w, 4))
  * 	pseudo = 0
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_7cygibbs_7plotLogo, NULL, __pyx_n_s_cygibbs); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_7cygibbs_11plotLogo, NULL, __pyx_n_s_cygibbs); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_plotLogo, __pyx_t_2) < 0) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -25732,7 +25816,7 @@ if (!__Pyx_RefNanny) {
  * 	iters = np.arange(len(loss))
  * 	loss = np.array(loss)
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_7cygibbs_9plotLoss, NULL, __pyx_n_s_cygibbs); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 221, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_7cygibbs_13plotLoss, NULL, __pyx_n_s_cygibbs); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 221, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_plotLoss, __pyx_t_2) < 0) __PYX_ERR(0, 221, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -25744,7 +25828,7 @@ if (!__Pyx_RefNanny) {
  * 	w = int(size) #Length of Motif
  * 	print("Parsing from " + fasta)
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_7cygibbs_11main, NULL, __pyx_n_s_cygibbs); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 231, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_7cygibbs_15main, NULL, __pyx_n_s_cygibbs); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 231, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_main_2, __pyx_t_2) < 0) __PYX_ERR(0, 231, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;

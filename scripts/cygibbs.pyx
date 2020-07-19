@@ -8,10 +8,15 @@ import matplotlib.pyplot as plt
 import pickle
 import argparse
 
+'''
+This program uses a Gibb's sampler approach to sequentially perform de novo
+motif discovery on a set of sequences.
+'''
+
 #Input: seq - np string array of a fasta sequence
 #Output: freq - a dictionary of column-wise frequencies
 #Output: intList - a list of quaternarized nucleotide sequences
-cdef count(seq):
+cpdef count(seq):
 	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}
 	cdef dict freq = {0:0, 1:0, 2:0, 3:0}
 	cdef int i
@@ -26,7 +31,7 @@ cdef count(seq):
 #Output: quarternarized sequence matrix, background frequency dictionary, 
 #			length of sequences (cannot be inferred without O(|seq|) work
 #								since all rows equal dimensions)
-cdef parse(stringSeqs):
+cpdef parse(stringSeqs):
 	cdef int maxSize = len(max(stringSeqs, key=len))
 	cdef int b = 4 # number of bases
 	cdef int i
