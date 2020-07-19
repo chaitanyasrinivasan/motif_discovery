@@ -11,10 +11,10 @@ cd ../data
 mkdir -p genes exons exons_merged introns genes_20KBflank
 
 #GET GENE AND EXON COORDINATES
-file=$1
+INPUT=$1
 echo "Mapping gene names to gene and exon coordinates..."
 
-python ../scripts/get_gene_and_exon_coordinates.py $file
+python ../scripts/get_gene_and_exon_coordinates.py $INPUT
 
 mv *genes.bed genes/
 mv *exons.bed exons/
@@ -75,7 +75,7 @@ do
 	cat ${flanks[i]} ${introns[i]} | sort -k 1,1 -k 2,2n | bedtools merge -i stdin > "${introns[i]::-4}_and_flanks.bed"
 done
 ## FIX THIS BUG
-mv introns/*_and_flanks.bed "${file::-4}.bed"
+mv introns/"${INPUT:8:-4}_introns_and_flanks.bed" "${INPUT::-4}.bed"
 
 #CLEANUP AND COMPLETE
 gzip ../scripts/gencode.v33.annotation.gff3

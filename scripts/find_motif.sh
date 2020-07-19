@@ -134,7 +134,7 @@ parallelRun()
 	do
 		if [ $(wc -l <$file) -gt 0 ]
 		then
-			echo "A job did not complete. Error logs written to logs/"
+			echo "Job ${file::-8} did not complete. Error logs written to ${file}"
 			exit 1
 		fi
 	done
@@ -193,6 +193,7 @@ bedToFasta() {
 	#Clean up
 	rm merged.bed
 	gzip hg38.fa
+	echo "Preprocessing fasta..."
 	sh preprocess.sh "${INPUT::-4}.fa"
 	#Redirect input var to processed fasta
 	INPUT="${INPUT::-4}.txt" 	
@@ -214,10 +215,10 @@ then
 	startAnalysis
 fi
 
-if [[ $TYPE = "GENE" ]]
+if [[ $TYPE = "GENES" ]]
 then
 	#Map genes to regulatory coordinates in hg38
-	sh gene_map.sh ${INPUT} #outputs ../data/introns_and_flanks/
+	sh gene_map.sh ${INPUT} 
 	#Map bed to fasta
 	INPUT="${INPUT::-4}.bed"
 	bedToFasta
