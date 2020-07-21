@@ -36,6 +36,8 @@ All dependencies excluding Slurm will be installed in the third step above.
 
 This tool can perform de novo regulatory motif discovery on hg38 fasta sequences, BED coordinates, or marker genes.
 
+![Image of tool](https://github.com/chaitanyasrinivasan/motif_discovery/motif_discovery.jpg)
+
 ## Parameters
 
 ### Required Arguments
