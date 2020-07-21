@@ -13,7 +13,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 
 ```shell
   cd motif_discovery/scripts
-  chmod 0777 *.sh
+  chmod 755 *.sh
   ./install.sh
 ```
 # Dependencies
