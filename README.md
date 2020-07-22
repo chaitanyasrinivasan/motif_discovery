@@ -7,7 +7,7 @@
 git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 ```
 
-2. Download anaconda from https://docs.anaconda.com/anaconda/ to ensure your system has the compatible version of Python along with the necessary packages.
+2. Download anaconda from https://docs.anaconda.com/anaconda/ to ensure your system has the compatible version of Python.
 
 3. Use the following commands to install all dependencies for this pipeline.
 
@@ -66,4 +66,8 @@ cd motif_discovery/scripts
 ```
 ## Output
 
-The program will output the motif logo and a plot of the loss function.
+The program will output the motif logo and a plot of the motif entropy over sampling iterations.
+
+![Image of motif](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/example_motif.png)
+
+![Image of entropy](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/example_entropy.png)
