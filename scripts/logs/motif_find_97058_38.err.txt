@@ -1,1 +1,0 @@
-slurmstepd: error: *** JOB 97096 ON compute-3-38 CANCELLED AT 2020-07-22T10:31:03 ***

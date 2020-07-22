@@ -1,8 +1,0 @@
-Parsing from ../data/MEF2A_genes_splits/split14.txt
-Dictionary written to ../data/MEF2A_genes_splits/split14.freq
-Initializing
-Searching
-Motif logo written to ../data/MEF2A_genes_splits/split14_motif.png
-Entropy function written to ../data/MEF2A_genes_splits/split14_loss.png
-Alignment matrix written to ../data/MEF2A_genes_splits/split14.matrix
-Done
