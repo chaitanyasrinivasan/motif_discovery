@@ -89,7 +89,7 @@ cdef init(seqs, w, freq, seqLengths):
 	P =  propensity(A, w, k, freq)
 	return (P, A, tStar, nStar, k, index, z)
 
-cdef entropy(A, freq):
+cpdef entropy(A, freq):
 	cdef int w = len(A[0])
 	cdef double pseudo = 0.1
 	cdef dict count

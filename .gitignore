@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+seqLogo/
+data/MEF2A_gene_splits/
+scripts/build/
+**logs/
+scripts/*.c
+scripts/*.so
+scripts/.nfs000000000007be0000000003
+scripts/BW.py
