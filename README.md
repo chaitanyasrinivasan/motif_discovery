@@ -13,7 +13,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 
 ```shell
   cd motif_discovery/scripts
-  chmod 0777 *.sh
+  chmod 755 *.sh
   ./install.sh
 ```
 # Dependencies
@@ -35,6 +35,8 @@ All dependencies excluding Slurm will be installed in the third step above.
 # **Motif Discovery**
 
 This tool can perform de novo regulatory motif discovery on hg38 fasta sequences, BED coordinates, or marker genes.
+
+![Image of tool](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/motif_discovery.jpg)
 
 ## Parameters
 
