@@ -9,7 +9,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 
 2. Download anaconda from https://docs.anaconda.com/anaconda/ to ensure your system has the compatible version of Python.
 
-3. Use the following commands to install all dependencies for this pipeline.
+3. Use the following commands to install all dependencies for this pipeline. Be sure to start an interactive session with at least 2 GB of allocated memory if you are installing on a cluster machine.
 
 ```shell
   cd motif_discovery/scripts
@@ -29,6 +29,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 	- sys
 - bedtools
 - Slurm Workload Manager (for submitting parallel jobs)
+- 2 GB of disk space
 
 All dependencies excluding Slurm will be installed in the third step above.
 
@@ -36,7 +37,7 @@ All dependencies excluding Slurm will be installed in the third step above.
 
 This tool can perform de novo regulatory motif discovery on hg38 fasta sequences, BED coordinates, or marker genes.
 
-![Image of tool](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/motif_discovery.jpg)
+![Image of tool](https://github.com/chaitanyasrinivasan/motif_discovery/images/blob/master/motif_discovery.jpg)
 
 ## Parameters
 
@@ -66,8 +67,8 @@ cd motif_discovery/scripts
 ```
 ## Output
 
-The program will output the motif logo and a plot of the motif entropy over sampling iterations.
+The program will output the motif logo and a plot of the motif entropy over sampling iterations. The motif logo represents the alignment with maximimum entropy.
 
-![Image of motif](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/example_motif.png)
+![Image of motif](https://github.com/chaitanyasrinivasan/motif_discovery/images/blob/master/example_motif.png)
 
-![Image of entropy](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/example_entropy.png)
+![Image of entropy](https://github.com/chaitanyasrinivasan/motif_discovery/images/blob/master/example_entropy.png)

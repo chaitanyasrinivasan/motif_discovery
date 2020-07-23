@@ -1,18 +1,18 @@
 #!/bin/bash
 helpFunction()
 {
-	echo -e "Usage: $0 -i [/path/to/fasta] -w [motif size] -t [BED/FASTA/GENES]\n"
+	echo -e "Usage: $0 -i [/path/to/data] -w [motif size] -t [BED/FASTA/GENES]\n"
 	echo -e "Required arguments:"
-	echo -e "\t-i, --input\tFile path to the processed fasta file"
+	echo -e "\t-i, --input\tFile path to the sequence, genomic coordinates, or genes list data."
 	echo -e "\t-w, --width\tPositive integer of motif width"
-	echo -e "\t-t --type\t Supported types: BED/FASTA/GENES"
+	echo -e "\t-t --type\t Supported types: BED/FASTA/GENES\n"
 	echo -e "Optional arguments:"
 	echo -e "\t-s, --sequential\tRun sequentially"
 	echo -e "\t-p, --parallel\tRun in parallel"
 	echo -e "\t-h, --help\n"
 	echo "Example run call below:"
 	echo ""
-	echo "$0 -i myfasta.txt -w 10"
+	echo "$0 -i myfasta.fa -w 10 -t FASTA"
 	exit 1 # Exit script after printing help
 }
 # check for args
@@ -21,7 +21,6 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-WIDTH=-1
 PARALLEL=0
 SEQUENTIAL=0
 
@@ -58,23 +57,32 @@ done
 # check if input file exists
 if [ $(ls ${INPUT}| wc -l) -eq 0 ]
 	then
-	echo "Error: input fasta ${INPUT} does not exist"
+	echo "Error: input ${INPUT} does not exist"
 	exit 1
 fi
-# check if more than 1 sequence
-if [ $(wc -l <${INPUT}) -lt 2 ]
-	then
-	echo "Error: input fasta ${INPUT} needs at least 2 sequences"
+# check type is compatabile
+if [[ $TYPE != "BED" && $TYPE != "FASTA" && $TYPE != "GENES" ]]
+then
+	echo "Error: Provided file type not supported"
+	helpFunction
 	exit 1
 fi
-# check input width
-if (($WIDTH < 1))
-	then
-	echo "Error: width must be an integer greater than 0"
-	exit 1
-fi
+
 #check width is greater than sequence lengths
 scanSeqs() {
+	# check if more than 1 sequence
+	if [ $(wc -l <${INPUT}) -lt 2 ]
+		then
+		echo "Error: input fasta ${INPUT} needs at least 2 sequences"
+		exit 1
+	fi
+	# check input width
+	if (($WIDTH < 1))
+		then
+		echo "Error: width must be an integer greater than 0"
+		exit 1
+	fi
+	# check width is not greater than sequence length
 	while IFS= read -r line; 
 	do 
 		if ((${#line} < $WIDTH))
@@ -87,15 +95,16 @@ scanSeqs() {
 
 if [[ $TYPE = "FASTA" ]]
 then
-	scanSeqs
+	# run width inference if width not provided
+	if [ -z "${WIDTH}" ];
+	then
+		echo "Inferring width from sequence alignment..."
+		WIDTH=`python run_align.py -i ${INPUT}`
+		echo "Setting motif width as ${WIDTH}..."
+		scanSeqs
+	fi
 fi
 
-if [[ $TYPE != "BED" && $TYPE != "FASTA" && $TYPE != "GENES" ]]
-then
-	echo "Error: Provided file type not supported"
-	helpFunction
-	exit 1
-fi
 ############## PARALLEL ALGORITHM ################
 
 parallelRun()
@@ -123,18 +132,18 @@ parallelRun()
 	echo "Submitting jobs..."
 	NUM_JOBS=$(wc -l <jobs.txt)
 	sed "s/REPLACE/${NUM_JOBS}/g" template.sb > jobs.sb
-	#Clear old error logs
+	# clear old error logs
 	if [ $(grep err logs/* | wc -l) -gt 0 ]
 	then
 		rm logs/*err*
 	fi
 	sbatch --wait jobs.sb ${WIDTH}
-	#Check that all jobs completed
+	# check that all jobs completed
 	for file in logs/*err*;
 	do
 		if [ $(wc -l <$file) -gt 0 ]
 		then
-			echo "Job ${file::-8} did not complete. Error logs written to ${file}"
+			echo "Error : Job ${file::-8} did not complete. Error logs written to ${file}"
 			exit 1
 		fi
 	done
@@ -144,7 +153,7 @@ parallelRun()
 	echo "Running merge..."
 	total_lines=$(wc -l <${INPUT})
 	python merge.py jobs.txt ${INPUT} ${total_lines} ${WIDTH}
-	#Program compelete, clean-up
+	# program compelete, clean-up
 	rm jobs.txt jobs.sb "${INPUT::-4}_shuffled.txt"
 	rm -r "${INPUT::-4}_splits"
 }
@@ -153,7 +162,7 @@ parallelRun()
 
 startAnalysis() {
 	GRAN=20 #empirically determined, see motif_discovery/performance
-	#Automatically infer if parallel or sequential is faster
+	# automatically infer if parallel or sequential is faster
 	if [ $SEQUENTIAL -eq $PARALLEL ]
 	then
 		if [ $(wc -l <${INPUT}) -lt $GRAN ]
@@ -161,19 +170,33 @@ startAnalysis() {
 			python run_gibbs.py -i $INPUT -w $WIDTH -m conquer
 			exit 0
 		else
-			parallelRun
-			exit 0
+			if [ -x "$(command -v sbatch)" ]
+			then
+				parallelRun
+				exit 0
+			else
+				python run_gibbs.py -i $INPUT -w $WIDTH -m conquer
+				exit 0	
+			fi
 		fi
 	fi
+	# sequential run
 	if (( SEQUENTIAL ))
 	then
 		python run_gibbs.py -i $INPUT -w $WIDTH -m conquer
 		exit 0
 	fi
+	# parallel run
 	if (( PARALLEL ))
 	then
-		parallelRun
-		exit 0
+		if ! [ -x "$(command -v sbatch)" ] 
+		then
+			echo "Parallel job submission not supported, use -s instead of -p"
+			exit 1
+		else
+			parallelRun
+			exit 0
+		fi
 	fi
 }
 
@@ -208,10 +231,18 @@ fi
 
 if [[ $TYPE = "BED" ]]
 then
+	# convert BED to FASTA
 	bedToFasta
-	#Quality check
+	# infer width if not provided
+	if [ -z "${WIDTH}" ];
+	then
+		echo "Inferring width from sequence alignment..."
+		WIDTH=`python run_align.py -i ${INPUT}`
+		echo "Setting motif width as ${WIDTH}..."
+	fi
+	# quality check
 	scanSeqs
-	#Run motif discovery
+	# run motif discovery
 	startAnalysis
 fi
 

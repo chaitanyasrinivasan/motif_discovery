@@ -42,6 +42,7 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 	#readjust indices to read from seq1, seq2
 	i -= 1
 	j -= 1
+	#TRACEBACK
 	if (i >= j):
 		offset = i-j
 		aligned = np.array([[4 for _ in range(max(l1, offset+l2))] for _ in range(2)])
@@ -76,7 +77,7 @@ cpdef get_pairs(seqs, seqLengths):
 	cdef int minVal
 	cdef int minArg
 	cdef int oddSeq = -1
-	#COMPUTE DISTANCES
+	#COMPUTE PAIRWISE DISTANCES
 	for i in range(len(seqs)):
 		for j in range(len(seqs)):
 			if (i > j):
@@ -87,7 +88,7 @@ cpdef get_pairs(seqs, seqLengths):
 				distanceVal = distance(aligned[0], aligned[1])
 				distances[i][j] = distanceVal
 				distances[j][i] = distanceVal
-	#PRIMS ALGORITHM
+	#PRIMS MST ALGORITHM 
 	for i in range(len(seqs)):
 		if len(dists) == (len(seqs) -1):
 			oddSeq = i
@@ -158,6 +159,7 @@ cpdef merge_align(align1, align2, l1, l2):
 				aligned[l+len(align1)][k] = align2[l][k]
 	return aligned
 
+#Initalize tree with pairwise alignment of most similar sequence pairs
 cpdef build_roots(seqs, dists, seqLengths, oddSeq):
 	noDoubles = set()
 	seqList = list()
@@ -175,6 +177,7 @@ cpdef build_roots(seqs, dists, seqLengths, oddSeq):
 		seqList.append(seqs[oddSeq])
 	return seqList, lengthList
 
+#Recursively merge alignments
 cpdef merge_leaves(seqList, lengthList):
 	cdef list vals
 	cdef list lengths
@@ -182,6 +185,7 @@ cpdef merge_leaves(seqList, lengthList):
 	if (len(seqList) == 1):
 		return seqList.pop(0)
 	else:
+		#MERGE
 		vals = list()
 		lengths = list()
 		for i in range(int(len(seqList)/2)):
@@ -190,7 +194,8 @@ cpdef merge_leaves(seqList, lengthList):
 			else:
 				vals.append(merge_align(seqList[2*i+1], seqList[2*i], lengthList[2*i+1], lengthList[2*i]))
 			lengths.append(len(vals[-1][0]))
-		if (len(seqList) % 2 == 1): #add merge remaining sequence
+		#odd number of sequences case
+		if (len(seqList) % 2 == 1): 
 			vals.append(seqList[-1])
 			lengths.append(len(vals[-1][0]))
 		return merge_leaves(vals, lengths)
@@ -218,6 +223,7 @@ cpdef entropy(A, freq):
 			entropy += (count[b]/total)*np.log(count[b]/total/freq[b])
 	return (entropy/w)
 
+#Look for window maximizing entropy and window size
 cpdef infer(multi_align, freq):
 	cdef int i
 	cdef int j
