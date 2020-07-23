@@ -37,7 +37,7 @@ All dependencies excluding Slurm will be installed in the third step above.
 
 This tool can perform de novo regulatory motif discovery on hg38 fasta sequences, BED coordinates, or marker genes.
 
-![Image of tool](https://github.com/chaitanyasrinivasan/motif_discovery/images/blob/master/motif_discovery.jpg)
+![Image of tool](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/images/motif_discovery.jpg)
 
 ## Parameters
 
@@ -69,6 +69,6 @@ cd motif_discovery/scripts
 
 The program will output the motif logo and a plot of the motif entropy over sampling iterations. The motif logo represents the alignment with maximimum entropy.
 
-![Image of motif](https://github.com/chaitanyasrinivasan/motif_discovery/images/blob/master/example_motif.png)
+![Image of motif](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/images/example_motif.png)
 
-![Image of entropy](https://github.com/chaitanyasrinivasan/motif_discovery/images/blob/master/example_entropy.png)
+![Image of entropy](https://github.com/chaitanyasrinivasan/motif_discovery/blob/master/images/example_entropy.png)
