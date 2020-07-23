@@ -93,17 +93,26 @@ scanSeqs() {
 	done < ${INPUT}
 }
 
-if [[ $TYPE = "FASTA" ]]
-then
+#Remove sequences that are not compatabile
+#Takes in input file
+preProcessing() {
+	awk 'NR % 2 == 0 {print}' $1 > "${1::-3}.txt"
+	grep -vE "(X)" "${1::-3}.txt" | grep -vE "(N)" | grep -vE "(n)" | tr '[:upper:]' '[:lower:]' > "${1::-3}_filtered.txt"
+	rm "${1::-3}.txt"
+	mv "${1::-3}_filtered.txt" "${1::-3}.txt"
+}
+
+############## WIDTH INFERENCE ######################
+
+alignSeqs() {
 	# run width inference if width not provided
 	if [ -z "${WIDTH}" ];
 	then
 		echo "Inferring width from sequence alignment..."
 		WIDTH=`python run_align.py -i ${INPUT}`
 		echo "Setting motif width as ${WIDTH}..."
-		scanSeqs
-	fi
-fi
+	fi	
+}
 
 ############## PARALLEL ALGORITHM ################
 
@@ -191,7 +200,7 @@ startAnalysis() {
 	then
 		if ! [ -x "$(command -v sbatch)" ] 
 		then
-			echo "Parallel job submission not supported, use -s instead of -p"
+			echo "Error : parallel job submission not supported, use -s instead of -p"
 			exit 1
 		else
 			parallelRun
@@ -203,29 +212,37 @@ startAnalysis() {
 ############# BED TO FASTA ####################################
 
 bedToFasta() {
-	#Check BED is correctly formatted using bedtools quick command
-	echo "Merging bed coordinates..."
-	sort -k 1,1 -k 2,2n ${INPUT} | bedtools merge -i stdin > merged.bed
-	#Download hg38 fasta
-	if [ ! -f hg38.fa ]
+	if [ -x "$(command -v bedtools)" ] 
 	then
-		wget -nc ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-		gunzip hg38.fa.gz
+		#Check BED is correctly formatted using bedtools quick command
+		echo "Merging bed coordinates..."
+		sort -k 1,1 -k 2,2n ${INPUT} | bedtools merge -i stdin > merged.bed
+		#Download hg38 fasta
+		if [ ! -f hg38.fa ]
+		then
+			wget -nc ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+			gunzip hg38.fa.gz
+		fi
+		bedtools getfasta -fi hg38.fa -bed merged.bed > "${INPUT::-4}.fa"
+		#Clean up
+		rm merged.bed
+		gzip hg38.fa
+		echo "Preprocessing fasta..."
+		preProcessing "${INPUT::-4}.fa"
+		#Redirect input var to processed fasta
+		INPUT="${INPUT::-4}.txt"
+	else
+		echo "Error: bedtools is not installed or is not executable from your path."
+		exit 0
 	fi
-	bedtools getfasta -fi hg38.fa -bed merged.bed > "${INPUT::-4}.fa"
-	#Clean up
-	rm merged.bed
-	gzip hg38.fa
-	echo "Preprocessing fasta..."
-	sh preprocess.sh "${INPUT::-4}.fa"
-	#Redirect input var to processed fasta
-	INPUT="${INPUT::-4}.txt" 	
 }
 
 ###################  MAIN ####################################
 
 if [[ $TYPE = "FASTA" ]]
 then
+	alignSeqs
+	scanSeqs
 	startAnalysis
 fi
 
@@ -248,7 +265,6 @@ fi
 
 if [[ $TYPE = "GENES" ]]
 then
-	#Change naming scheme
 	#Map genes to regulatory coordinates in hg38
 	sh gene_map.sh ${INPUT} 
 	#Map bed to fasta

@@ -8,3 +8,4 @@ scripts/*.c
 scripts/*.so
 scripts/.nfs000000000007be0000000003
 scripts/BW.py
+scripts/*jobs*

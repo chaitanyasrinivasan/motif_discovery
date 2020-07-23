@@ -1,6 +1,4 @@
 import align #CYTHON ALIGNMENT
-import time
-import numpy as np
 import sys
 import argparse
 

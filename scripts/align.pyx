@@ -21,6 +21,7 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 	cdef int score
 	cdef long [:] vals
 	cdef long [:,:] aligned
+
 	#INITIALIZE ALIGNMENT MATRIX
 	A[0][0] = 0
 	for j in range(1,l2+1):
@@ -164,6 +165,7 @@ cpdef build_roots(seqs, dists, seqLengths, oddSeq):
 	noDoubles = set()
 	seqList = list()
 	lengthList = list()
+
 	for key in dists:
 		if (key not in noDoubles):
 			if seqLengths[key] >= seqLengths[dists[key]]:
@@ -182,6 +184,7 @@ cpdef merge_leaves(seqList, lengthList):
 	cdef list vals
 	cdef list lengths
 	cdef int i
+
 	if (len(seqList) == 1):
 		return seqList.pop(0)
 	else:
@@ -210,8 +213,9 @@ cpdef entropy(A, freq):
 	cdef int b
 	cdef double entropy = 0
 	cdef int gapCount
+
 	for j in range(w):
-		count = {0:freq[0], 1:freq[1], 2:freq[2], 3:freq[3]}
+		count = {0:pseudo, 1:pseudo, 2:pseudo, 3:pseudo}
 		for i in range(len(A)):
 			gapCount = 0
 			if A[i][j] in count:
@@ -224,11 +228,12 @@ cpdef entropy(A, freq):
 	return (entropy/w)
 
 #Look for window maximizing entropy and window size
-cpdef infer(multi_align, freq):
+cpdef infer(multi_align, freq, seqLengths):
 	cdef int i
 	cdef int j
 	cdef double maxVal
 	cdef int maxArg
+	
 	for i in range(len(multi_align[0])-1):
 		for j in range(i+1, len(multi_align[0])):
 			val = (j-i)*entropy(multi_align[:,i:j], freq)
@@ -238,6 +243,13 @@ cpdef infer(multi_align, freq):
 			if val >= maxVal:
 				maxVal = val
 				maxArg = j-i
+	#low homogeneity in alignment
+	if maxArg < 5:
+		maxArg = 10 #reasonable estimate
+	for i in seqLengths:
+		if maxArg > i:
+			#if width too large, set it as large as possible
+			maxArg = i
 	return maxArg
 
 def main(fasta):
@@ -246,7 +258,7 @@ def main(fasta):
 	dists, oddSeq = get_pairs(seqs, seqLengths)
 	seqList, lengthList = build_roots(seqs, dists, seqLengths, oddSeq)
 	multi_align = merge_leaves(seqList, lengthList)
-	width = infer(multi_align, freq)
+	width = infer(multi_align, freq, seqLengths)
 	print(width)
 
 if __name__ == "__main__":
