@@ -2,7 +2,12 @@
 cd ../scripts
 
 TIMEFORMAT=%R #use only real elapsed time
-FILE=../data/MEF2A.txt
+FILE=$1
+if [ -z "${FILE}" ];
+then
+  echo "Error: provide an input file"
+  exit 0
+fi
 SIZE=$(wc -l <${FILE})
 for (( i=5; i<=$SIZE; ++i ))
 do
@@ -11,3 +16,7 @@ do
 	(time ./gibbs_parallel.sh -i ../data/data.txt -w 10 -t FASTA -p) 2>> ../performance/parallel_metrics.txt
 done
 
+# make graph
+python plot_metrics.py
+
+exit 1

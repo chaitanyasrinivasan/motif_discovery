@@ -5,14 +5,16 @@ helpFunction()
 	echo -e "Required arguments:"
 	echo -e "\t-i, --input\tFile path to the sequence, genomic coordinates, or genes list data."
 	echo -e "\t-w, --width\tPositive integer of motif width"
-	echo -e "\t-t --type\t Supported types: BED/FASTA/GENES\n"
+	echo -e "\t-t --type\t Supported types: BED(.bed)/FASTA(.fa)/GENES(.txt)\n"
 	echo -e "Optional arguments:"
 	echo -e "\t-s, --sequential\tRun sequentially"
 	echo -e "\t-p, --parallel\tRun in parallel"
 	echo -e "\t-h, --help\n"
-	echo "Example run call below:"
+	echo "Example run calls below:"
 	echo ""
-	echo "$0 -i myfasta.fa -w 10 -t FASTA"
+	echo "$0 -i myfasta.fa -w 10 -t FASTA\n"
+	echo "$0 -i mybed.bed -w 15 -t BED\n"
+	echo "$0 -i mygenes.txt -w 8 -t GENES\n"
 	exit 1 # Exit script after printing help
 }
 # check for args
@@ -21,9 +23,9 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# default glob vars
 PARALLEL=0
 SEQUENTIAL=0
-
 # read in command line arguments
 while [ "$1" != "" ]; do
 	case $1 in
@@ -68,7 +70,6 @@ then
 	exit 1
 fi
 
-#check width is greater than sequence lengths
 scanSeqs() {
 	# check if more than 1 sequence
 	if [ $(wc -l <${INPUT}) -lt 2 ]
@@ -82,7 +83,7 @@ scanSeqs() {
 		echo "Error: width must be an integer greater than 0"
 		exit 1
 	fi
-	# check width is not greater than sequence length
+	# check width is not greater than a sequence length
 	while IFS= read -r line; 
 	do 
 		if ((${#line} < $WIDTH))
@@ -93,8 +94,7 @@ scanSeqs() {
 	done < ${INPUT}
 }
 
-#Remove sequences that are not compatabile
-#Takes in input file
+#Remove sequences from FASTA that are not compatabile
 preProcessing() {
 	awk 'NR % 2 == 0 {print}' $1 > "${1::-3}.txt"
 	grep -vE "(X)" "${1::-3}.txt" | grep -vE "(N)" | grep -vE "(n)" | tr '[:upper:]' '[:lower:]' > "${1::-3}_filtered.txt"
@@ -161,7 +161,7 @@ parallelRun()
 	#MERGE OUTPUTS AND RUN SEQUENTIAL GIBBS
 	echo "Running merge..."
 	total_lines=$(wc -l <${INPUT})
-	python merge.py jobs.txt ${INPUT} ${total_lines} ${WIDTH}
+	python merge.py -j jobs.txt -f ${INPUT} -k ${total_lines} -w ${WIDTH}
 	# program compelete, clean-up
 	rm jobs.txt jobs.sb "${INPUT::-4}_shuffled.txt"
 	rm -r "${INPUT::-4}_splits"
@@ -237,26 +237,79 @@ bedToFasta() {
 	fi
 }
 
+################### GENES TO BED #############################
+
+genesToBed() {
+	LIST=$1
+	#Download GENCODE v33 and hg38 chrom sizes
+	if [ ! -f gencode.v33.annotation.gff3 ]
+	then
+		wget -nc ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_33/gencode.v33.annotation.gff3.gz
+		gunzip gencode.v33.annotation.gff3.gz
+	fi
+	if [! -f hg38.chrom.sizes]
+	then
+		wget -nc http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes
+	fi
+
+	#GET GENE AND EXON COORDINATES
+	echo "Mapping gene names to gene and exon coordinates..."
+	# returns gene and exon coordinates (2 files) for each gene in the list
+	python ../scripts/get_gene_and_exon_coordinates.py $LIST
+	GENEBED="${LIST::-4}_genes.bed"
+	EXONBED="${LIST::-4}_exons.bed"
+
+	#MERGE, SUBTRACT EXONS FROM GENE, AND FLANK GENE 20KB TO CAPTURE REGULATORY ACTIVITY
+	echo "Merging exons..."
+	sort -k1,1 -k2,2n $EXONBED | bedtools merge -i stdin > "${EXONBED::-4}_merged.bed"
+	EXONMERGEDBED="${EXONBED::-4}_merged.bed"
+	echo "Subtracting merged exons from gene and getting gene flanks..."
+	sort -k 1,1 -k 2,2n $GENEBED > "${GENEBED::-4}_sorted.bed"
+	GENESORTEDBED="${GENEBED::-4}_sorted.bed"
+	bedtools subtract -a $GENESORTEDBED -b $EXONMERGEDBED > "${LIST::-4}_introns.bed"
+	INTRONBED="${LIST::-4}_introns.bed"
+	bedtools flank -i $GENESORTEDBED -g hg38.chrom.sizes -b 20000 | bedtools subtract -a stdin -b $GENESORTEDBED > "${GENEBED::-4}_20KBflank.bed"
+	GENEFLANKBED="${GENEBED::-4}_20KBflank.bed"
+	done
+
+	#ADD GENE FLANKS TO INTRONS
+	cat $GENEFLANKBED $INTRONBED | sort -k 1,1 -k 2,2n | bedtools merge -i stdin > "${INTRONBED::-4}_and_intergenics.bed"
+	done
+	mv "${LIST::-4}_introns_and_intergenics.bed" "${INPUT::-4}.bed"
+	# reset glob var INPUT
+	INPUT="${INPUT::-4}.bed"
+	#CLEANUP AND COMPLETE
+	gzip ../scripts/gencode.v33.annotation.gff3
+	rm GENEFLANKBED INTRONBED GENESORTEDBED EXONMERGEDBED EXONBED GENEBED
+	echo "Done mapping genes to BED."
+}
+
 ###################  MAIN ####################################
 
 if [[ $TYPE = "FASTA" ]]
 then
-	alignSeqs
-	scanSeqs
-	startAnalysis
+	if [ ${INPUT: -3} != ".fa" ]
+	then
+		echo "Error: file extension must be .fa"
+		exit 0
+	else
+		alignSeqs
+		scanSeqs
+		startAnalysis
+	fi
 fi
 
 if [[ $TYPE = "BED" ]]
 then
+	if [ ${INPUT: -4} != ".bed" ]
+	then
+		echo "Error: file extension must be .bed"
+		exit 0
+	fi
 	# convert BED to FASTA
 	bedToFasta
 	# infer width if not provided
-	if [ -z "${WIDTH}" ];
-	then
-		echo "Inferring width from sequence alignment..."
-		WIDTH=`python run_align.py -i ${INPUT}`
-		echo "Setting motif width as ${WIDTH}..."
-	fi
+	alignSeqs
 	# quality check
 	scanSeqs
 	# run motif discovery
@@ -265,10 +318,14 @@ fi
 
 if [[ $TYPE = "GENES" ]]
 then
+	if [ ${INPUT: -4} != ".txt" ]
+	then
+		echo "Error: file extension must be .txt"
+		exit 0
+	fi
 	#Map genes to regulatory coordinates in hg38
-	sh gene_map.sh ${INPUT} 
+	genesToBed ${INPUT} 
 	#Map bed to fasta
-	INPUT="${INPUT::-4}.bed"
 	bedToFasta
 	#Quality check
 	scanSeqs

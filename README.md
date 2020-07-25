@@ -48,6 +48,10 @@ This tool can perform de novo regulatory motif discovery on hg38 fasta sequences
 -i --input : Preprocessed .fasta file that contains only lower case DNA nucleotide characters. The file should contain at least two sequences, and the sequences should have length greater than or equal to the specified width.  
 -t --type : Input file type [FASTA/BED/GENES]. BED coordinates must be mapped to the hg38 reference genome. The GENES file type is a single column of official human gene names crosslisted with GENCODE Human Release 33.
 ```
+The file extensions for the inputs must be specified as follows:
+FASTA : .fa
+BED: .bed
+GENES: .txt
 
 ### Optional Arguments
 
