@@ -61,7 +61,7 @@ if __name__ == "__main__":
 	if (len(sys.argv)==1):
 	    parser.print_help(sys.stderr)
 	    sys.exit(1)
-	elif (options.input is None):
+	elif (options.jobs is None):
 		parser.print_help(sys.stderr)
 		sys.exit(1)
 	elif (options.fasta is None):
