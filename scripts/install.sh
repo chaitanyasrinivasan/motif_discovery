@@ -10,11 +10,11 @@ else
 	conda config --add channels defaults
 	conda config --add channels bioconda
 	conda config --add channels conda-forge
-	conda install -c anaconda cython
-	conda install -c anaconda pandas
-	conda install -c conda-forge matplotlib
-	conda install -c conda-forge argparse
-	conda install -c bioconda seqlogo
+	conda install cython
+	conda install pandas
+	conda install matplotlib
+	conda install argparse
+	conda install seqlogo
 fi
 echo "Done"
 echo "Downloading hg38 reference files..."

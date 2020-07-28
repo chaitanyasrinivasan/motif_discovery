@@ -4,17 +4,17 @@ helpFunction()
 	echo -e "Usage: $0 -i [/path/to/data] -w [motif size] -t [BED/FASTA/GENES]\n"
 	echo -e "Required arguments:"
 	echo -e "\t-i, --input\tFile path to the sequence, genomic coordinates, or genes list data."
-	echo -e "\t-w, --width\tPositive integer of motif width"
 	echo -e "\t-t --type\t Supported types: BED(.bed)/FASTA(.fa)/GENES(.txt)\n"
 	echo -e "Optional arguments:"
+	echo -e "\t-w, --width\tPositive integer of motif width"
 	echo -e "\t-s, --sequential\tRun sequentially"
 	echo -e "\t-p, --parallel\tRun in parallel"
 	echo -e "\t-h, --help\n"
 	echo "Example run calls below:"
 	echo ""
-	echo "$0 -i myfasta.fa -w 10 -t FASTA"
-	echo "$0 -i mybed.bed -w 10 -t BED"
-	echo "$0 -i mygenes.txt -w 10 -t GENES"
+	echo "$0 -i myfasta.fa -t FASTA"
+	echo "$0 -i mybed.bed -t BED"
+	echo "$0 -i mygenes.txt -t GENES"
 	exit 1 # Exit script after printing help
 }
 # check for args

@@ -9,7 +9,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 
 2. Download anaconda from https://docs.anaconda.com/anaconda/ to ensure your system has the compatible version of Python.
 
-3. Use the following commands to install all dependencies for this pipeline. Be sure to start an interactive session with at least 2 GB of allocated memory if you are installing on a cluster machine.
+3. Use the following commands to install all dependencies for this pipeline.
 
 ```shell
   cd motif_discovery/scripts
@@ -18,7 +18,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 ```
 # Dependencies
 
-- Python 3
+- [Python 3](https://docs.anaconda.com/anaconda/install/)
 	- argparse
 	- cython
 	- matplotlib
@@ -27,11 +27,12 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 	- pickle
 	- seqlogo
 	- sys
-- bedtools
-- Slurm Workload Manager (for submitting parallel jobs)
+- [bedtools](https://bedtools.readthedocs.io/en/latest/)
+- [wget](https://www.gnu.org/software/wget/)
+- [Slurm Workload Manager (for submitting parallel jobs)](https://slurm.schedmd.com/download.html)
 - 2 GB of disk space
 
-All dependencies excluding Slurm will be installed in the third step above.
+All dependencies excluding Slurm and wget are installed in steps above.
 
 # **Motif Discovery**
 
@@ -44,18 +45,21 @@ This tool can perform de novo regulatory motif discovery on hg38 fasta sequences
 ### Required Arguments
 
 ```
--w --width : Integer length of motif
--i --input : Preprocessed .fasta file that contains only lower case DNA nucleotide characters. The file should contain at least two sequences, and the sequences should have length greater than or equal to the specified width.  
+-i --input : .fasta file. The file should contain at least two sequences, and the sequences should have length greater than or equal to a specified width.  
 -t --type : Input file type [FASTA/BED/GENES]. BED coordinates must be mapped to the hg38 reference genome. The GENES file type is a single column of official human gene names crosslisted with GENCODE Human Release 33.
 ```
-The file extensions for the inputs must be specified as follows:
-FASTA : .fa
-BED: .bed
-GENES: .txt
+
+The file extensions for the input passed to `-i` must be specified as follows:
+TYPE | File Extension
+------------ | -------------
+FASTA | .fa
+BED | .bed
+GENES | .txt
 
 ### Optional Arguments
 
 ```
+-w --width : Integer length of motif. If this flag is not provided, the motif width will be inferred.
 -s --sequential : Run the motif discovery algorithm sequentially.
 -p --parallel : Run the motif discovery algorithm in parallel. Requires Slurm Workload Manager.  
 -h --help
@@ -67,7 +71,7 @@ If the `-s` or `-p` flags are not specified, the program will automatically choo
 
 ```shell
 cd motif_discovery/scripts
-./gibbs_parallel.sh -i [/path/to/input] -w [integer size] -t [FASTA/BED/GENES]
+./gibbs_parallel.sh -i [/path/to/input] -t [FASTA/BED/GENES]
 ```
 ## Output
 
