@@ -4,7 +4,6 @@ helpFunction()
 	echo -e "Usage: $0 -i [/path/to/data] -w [motif size] -t [BED/FASTA/GENES]\n"
 	echo -e "Required arguments:"
 	echo -e "\t-i, --input\tFile path to the sequence, genomic coordinates, or genes list data."
-	echo -e "\t-t --type\t Supported types: BED(.bed)/FASTA(.fa)/GENES(.txt)\n"
 	echo -e "Optional arguments:"
 	echo -e "\t-w, --width\tPositive integer of motif width"
 	echo -e "\t-s, --sequential\tRun sequentially"
@@ -12,9 +11,9 @@ helpFunction()
 	echo -e "\t-h, --help\n"
 	echo "Example run calls below:"
 	echo ""
-	echo "$0 -i myfasta.fa -t FASTA"
-	echo "$0 -i mybed.bed -t BED"
-	echo "$0 -i mygenes.txt -t GENES"
+	echo "$0 -i myfasta.fa -w 10 -p"
+	echo "$0 -i mybed.bed -s"
+	echo "$0 -i mygenes.txt"
 	exit 1 # Exit script after printing help
 }
 # check for args
@@ -34,9 +33,6 @@ while [ "$1" != "" ]; do
 								;;
 		-w | --width )			shift
 								WIDTH=$1
-								;;
-		-t | --type )			shift
-								TYPE=$1
 								;;
 		-s | --sequential )		shift
 								SEQUENTIAL=1
@@ -63,9 +59,9 @@ if [ $(ls ${INPUT}| wc -l) -eq 0 ]
 	exit 1
 fi
 # check type is compatabile
-if [[ $TYPE != "BED" && $TYPE != "FASTA" && $TYPE != "GENES" ]]
+if [[ ${INPUT: -4} != ".bed" && ${INPUT: -3} != ".fa" && ${INPUT: -4} != ".txt" ]]
 then
-	echo "Error: Provided file type not supported"
+	echo "Error: The file must have extension .fa, .bed, or .txt"
 	helpFunction
 	exit 1
 fi
@@ -96,11 +92,12 @@ scanSeqs() {
 
 #Remove sequences from FASTA that are not compatabile
 preProcessing() {
-	awk 'NR % 2 == 0 {print}' $INPUT > "${INPUT::-3}.txt"
-	grep -vE "(X)" "${INPUT::-3}.txt" | grep -vE "(N)" | grep -vE "(n)" | tr '[:upper:]' '[:lower:]' > "${INPUT::-3}_filtered.txt"
-	rm "${INPUT::-3}.txt"
-	mv "${INPUT::-3}_filtered.txt" "${INPUT::-3}.txt"
-	INPUT="${INPUT::-3}.txt"
+	echo "Preprocessing fasta..."
+	awk 'NR % 2 == 0 {print}' $INPUT > "${INPUT::-3}_seqs.txt"
+	grep -vE "(X)" "${INPUT::-3}_seqs.txt" | grep -vE "(N)" | grep -vE "(n)" | tr '[:upper:]' '[:lower:]' > "${INPUT::-3}_filtered.txt"
+	rm "${INPUT::-3}_seqs.txt"
+	mv "${INPUT::-3}_filtered.txt" "${INPUT::-3}_seqs.txt"
+	INPUT="${INPUT::-3}_seqs.txt"
 }
 
 ############## WIDTH INFERENCE ######################
@@ -229,8 +226,8 @@ bedToFasta() {
 		#Clean up
 		rm merged.bed
 		gzip hg38.fa
-		echo "Preprocessing fasta..."
-		preProcessing "${INPUT::-4}.fa"
+
+		INPUT="${INPUT::-4}.fa"
 	else
 		echo "Error: bedtools is not installed or is not executable from your path."
 		exit 0
@@ -278,7 +275,7 @@ genesToBed() {
 
 		#CLEANUP AND COMPLETE
 		gzip ../scripts/gencode.v33.annotation.gff3
-		rm GENEFLANKBED INTRONBED GENESORTEDBED EXONMERGEDBED EXONBED GENEBED
+		rm ${GENEFLANKBED} ${INTRONBED} ${GENESORTEDBED} ${EXONMERGEDBED} ${EXONBED} ${GENEBED}
 		echo "Done mapping genes to BED."
 	else
 		echo "Error: bedtools is not installed or is not executable from your path."
@@ -287,30 +284,11 @@ genesToBed() {
 }
 
 ###################  MAIN ####################################
-
-if [[ $TYPE = "FASTA" ]]
+#FASTA
+if [[ ${INPUT: -3} = ".fa" ]]
 then
-	if [ ${INPUT: -3} != ".fa" ]
-	then
-		echo "Error: file extension must be .fa"
-		exit 0
-	else
-		preProcessing
-		alignSeqs
-		scanSeqs
-		startAnalysis
-	fi
-fi
-
-if [[ $TYPE = "BED" ]]
-then
-	if [ ${INPUT: -4} != ".bed" ]
-	then
-		echo "Error: file extension must be .bed"
-		exit 0
-	fi
-	# convert BED to FASTA
-	bedToFasta
+	# preprocess sequences
+	preProcessing
 	# infer width if not provided
 	alignSeqs
 	# quality check
@@ -318,22 +296,25 @@ then
 	# run motif discovery
 	startAnalysis
 fi
-
-if [[ $TYPE = "GENES" ]]
+#BED
+if [ ${INPUT: -4} = ".bed" ]
 then
-	if [ ${INPUT: -4} != ".txt" ]
-	then
-		echo "Error: file extension must be .txt"
-		exit 0
-	fi
+	# convert BED to FASTA
+	bedToFasta
+	# same as FASTA from here
+	preProcessing 
+	alignSeqs
+	scanSeqs
+	startAnalysis
+fi
+#GENES
+if [ ${INPUT: -4} = ".txt" ]
+then
 	#Map genes to regulatory coordinates in hg38
 	genesToBed
-	#Map bed to fasta
+	# same as for BED from here
 	bedToFasta
-	# infer width if not provided
 	alignSeqs
-	# quality check
 	scanSeqs
-	# run motif discovery
 	startAnalysis
 fi

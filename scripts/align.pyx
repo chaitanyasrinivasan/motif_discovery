@@ -4,6 +4,8 @@ cimport numpy as np
 import sys
 
 '''
+Chaitanya Srinivasan
+
 This program performs a polytime progressive alignment by iteratively merging
 pairwise local alignments of sequences.
 '''
@@ -60,7 +62,7 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 			aligned[1][k] = seq2[k]
 	return aligned
 
-#Hamming distance function
+#Hamming distance function, returns distance
 cpdef distance(seq1, seq2):
 	cdef int val = 0
 	cdef int i
@@ -69,7 +71,7 @@ cpdef distance(seq1, seq2):
 			val += 1
 	return val
 
-#Pairwise distance matrix of alignments
+# Returns MST wrt distance of pairwise alignments
 cpdef get_pairs(seqs, seqLengths):
 	cdef long [:,:] distances = np.zeros(shape=(len(seqs), len(seqs)), dtype=int)
 	cdef int i
@@ -92,7 +94,8 @@ cpdef get_pairs(seqs, seqLengths):
 	#PRIMS MST ALGORITHM 
 	for i in range(len(seqs)):
 		if len(dists) == (len(seqs) -1):
-			oddSeq = i
+			oddSeq = i 
+		# can only have unique pairs
 		if (i not in dists):
 			minVal = len(seqs[0])+1 #unobtainable value
 			for j in range(len(seqs)):
@@ -103,7 +106,7 @@ cpdef get_pairs(seqs, seqLengths):
 			dists[minArg] = i
 	return dists, oddSeq
 
-#Perform alignment of two aligned sequence sets
+#Perform local alignment of two aligned sequence sets, l1 >= l2
 cpdef merge_align(align1, align2, l1, l2):
 	cdef int match = 5
 	cdef int mismatch = -1
