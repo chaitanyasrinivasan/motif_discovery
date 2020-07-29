@@ -32,7 +32,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 - [**Slurm Workload Manager**](https://slurm.schedmd.com/download.html)
 - 2 GB of disk space
 
-The bolded dependencies are not installed in the steps above. `wget` is necessary to download hg38 reference files. Slurm is not necessary for running the sequential motif discovery tool.
+The dependencies in bold are not installed in the steps above. `wget` is necessary to download hg38 reference files. Slurm is not necessary for running the sequential motif discovery tool.
 
 # **Motif Discovery**
 
@@ -75,7 +75,7 @@ If the `-s` or `-p` flags are not specified, the program will automatically choo
 
 ```shell
 cd motif_discovery/scripts
-./gibbs_parallel.sh -i [/path/to/input] -t [FASTA/BED/GENES]
+./gibbs_parallel.sh -i [/path/to/input]
 ```
 ## Output
 

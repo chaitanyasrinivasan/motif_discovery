@@ -314,6 +314,7 @@ then
 	genesToBed
 	# same as for BED from here
 	bedToFasta
+	preProcessing
 	alignSeqs
 	scanSeqs
 	startAnalysis
