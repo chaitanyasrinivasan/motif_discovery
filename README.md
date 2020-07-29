@@ -9,7 +9,7 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 
 2. Download anaconda from https://docs.anaconda.com/anaconda/ to ensure your system has the compatible version of Python.
 
-3. Use the following commands to install all dependencies for this pipeline.
+3. Use the following commands to install dependencies for this pipeline.
 
 ```shell
   cd motif_discovery/scripts
@@ -28,11 +28,11 @@ git clone https://github.com/chaitanyasrinivasan/motif_discovery.git
 	- seqlogo
 	- sys
 - [bedtools](https://bedtools.readthedocs.io/en/latest/)
-- [wget](https://www.gnu.org/software/wget/)
-- [Slurm Workload Manager (for submitting parallel jobs)](https://slurm.schedmd.com/download.html)
+- [**wget**](https://www.gnu.org/software/wget/)
+- [**Slurm Workload Manager**](https://slurm.schedmd.com/download.html)
 - 2 GB of disk space
 
-All dependencies excluding Slurm and wget are installed in steps above.
+The bolded dependencies are not installed in the steps above. `wget` is necessary to download hg38 reference files. Slurm is not necessary for running the sequential motif discovery tool.
 
 # **Motif Discovery**
 
@@ -42,28 +42,32 @@ This tool can perform de novo regulatory motif discovery on hg38 fasta sequences
 
 ## Parameters
 
-### Required Arguments
+### Required Argument
 
 ```
--i --input : .fasta file. The file should contain at least two sequences, and the sequences should have length greater than or equal to a specified width.  
--t --type : Input file type [FASTA/BED/GENES]. BED coordinates must be mapped to the hg38 reference genome. The GENES file type is a single column of official human gene names crosslisted with GENCODE Human Release 33.
+-i --input : Input data [TYPE : FASTA/BED/GENES]
 ```
 
 The file extensions for the input passed to `-i` must be specified as follows:
+
 TYPE | File Extension
 ------------ | -------------
 FASTA | .fa
 BED | .bed
 GENES | .txt
 
+The input data must correspond to at least two sequences. If the width is specified, it cannot be greater than the length of any sequence. BED coordinates must be mapped to the hg38 reference genome. The GENES file type is a single column of official human gene names crosslisted with GENCODE Human Release 33.
+
 ### Optional Arguments
 
 ```
--w --width : Integer length of motif. If this flag is not provided, the motif width will be inferred.
+-w --width : Integer length of motif.
 -s --sequential : Run the motif discovery algorithm sequentially.
 -p --parallel : Run the motif discovery algorithm in parallel. Requires Slurm Workload Manager.  
 -h --help
 ```
+
+If the `-w` flag is not provided, the program will infer the motif width.
 
 If the `-s` or `-p` flags are not specified, the program will automatically choose the mode that gives better performance.
 
