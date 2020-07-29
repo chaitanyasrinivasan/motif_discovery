@@ -1,4 +1,8 @@
 #!/bin/bash
+
+##### Chaitanya Srinivasan #####
+##### Parallel de novo regulatory motif discovery tool #####
+
 helpFunction()
 {
 	echo -e "Usage: $0 -i [/path/to/data] -w [motif size] -t [BED/FASTA/GENES]\n"

@@ -1,4 +1,9 @@
 #!/bin/bash
+
+#### Chaitanya Srinivasan ####
+# This script measures sequential and parallel motif discovery performance
+# over subsets of an input FASTA file
+
 cd ../scripts
 
 TIMEFORMAT=%R #use only real elapsed time
@@ -12,8 +17,8 @@ SIZE=$(wc -l <${FILE})
 for (( i=5; i<=$SIZE; ++i ))
 do
 	head -n $i $FILE > ../data/data.txt
-	(time ./gibbs_parallel.sh -i $FILE -w 10 -t FASTA -s) 2>> ../performance/sequential_metrics.txt
-	(time ./gibbs_parallel.sh -i $FILE -w 10 -t FASTA -p) 2>> ../performance/parallel_metrics.txt
+	(time ./find_motif.sh -i $FILE -w 10 -s) 2>> ../performance/sequential_metrics.txt
+	(time ./find_motif.sh -i $FILE -w 10 -p) 2>> ../performance/parallel_metrics.txt
 done
 
 # make graph

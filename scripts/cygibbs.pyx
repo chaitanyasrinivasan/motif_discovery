@@ -9,13 +9,13 @@ import pickle
 import argparse
 
 '''
+Chaitanya Srinivasan
+
 This program uses a Gibb's sampler approach to sequentially perform de novo
 motif discovery on a set of sequences.
 '''
 
-#Input: seq - np string array of a fasta sequence
-#Output: freq - a dictionary of column-wise frequencies
-#Output: intList - a list of quaternarized nucleotide sequences
+#Calculates column wise frequencies at each position, quarternizes seqs
 cpdef count(seq):
 	cdef dict bases = {"a":0, "c":1, "g":2, "t":3}
 	cdef dict freq = {0:0, 1:0, 2:0, 3:0}
@@ -27,10 +27,9 @@ cpdef count(seq):
 		intList[i] = int(bases[seq[i]])
 	return (freq, intList)
 
-#Input: stringSeqs - np string matrix of fasta sequences
-#Output: quarternarized sequence matrix, background frequency dictionary, 
-#			length of sequences (cannot be inferred without O(|seq|) work
-#								since all rows equal dimensions)
+#Forms quarternarized sequence matrix, background frequency dictionary, 
+#length of sequences (cannot be inferred without O(|seq|) work
+#since all rows equal dimensions)
 cpdef parse(stringSeqs):
 	cdef int maxSize = len(max(stringSeqs, key=len))
 	cdef int b = 4 # number of bases
@@ -41,7 +40,7 @@ cpdef parse(stringSeqs):
 	cdef double[:,:] freqs = np.empty(shape=(k, b))
 	cdef long[:,:] intSeqs = np.array([[4 for j in range(maxSize)] for i in range(k)])
 	cdef long[:] seqLengths = np.empty(shape=(k), dtype="int")
-	#0 = a, 1=c, 2=g, 3=t, 4=no base, space filler to maintain dimensions
+	#0=a, 1=c, 2=g, 3=t, 4=no base, maintains dimensions
 	for i in range(k):
 		freq, intList = count(stringSeqs[i])
 		seqLengths[i] = len(stringSeqs[i])
@@ -52,6 +51,7 @@ cpdef parse(stringSeqs):
 	val = (np.sum(freqs, axis=0))
 	return np.array(intSeqs), val/np.sum(val), seqLengths
 
+#Calculates propensities of A, C, T, G at each motif position
 cpdef propensity(A, int w, k, freq):
 	cdef int b = 4
 	cdef double[:,:] P = np.empty(shape=(b, w))
@@ -69,9 +69,10 @@ cpdef propensity(A, int w, k, freq):
 			P[i][j] = (((counts[i] + pseudo)/(k + (pseudo*b))))/freq[i]
 	return P
 
-#Complexity: O(kw)
+#Randomly initalizes motif alignment across sequences
 cdef init(seqs, w, freq, seqLengths):
 	cdef int k = len(seqs)
+	# leave one special sequence out until last update
 	cdef int z = 0
 	cdef long[:] tStar = seqs[z]
 	cdef int nStar = seqLengths[z]
@@ -89,9 +90,10 @@ cdef init(seqs, w, freq, seqLengths):
 	P =  propensity(A, w, k, freq)
 	return (P, A, tStar, nStar, k, index, z)
 
+#Calculates the entropy of an alignment
 cpdef entropy(A, freq):
 	cdef int w = len(A[0])
-	cdef double pseudo = 0.1
+	cdef double pseudo = 0.1 #pseudocount
 	cdef dict count
 	cdef int j
 	cdef int i
@@ -108,6 +110,7 @@ cpdef entropy(A, freq):
 			entropy += (count[b]/total)*np.log(count[b]/total/freq[b])
 	return entropy/w
 
+#Estimates subsequence with highest propensity using Monte Carlo method
 cpdef getOptSeq(P, tStar, nStar, w):
 	cdef double[:] pdf
 	cdef int o
@@ -143,8 +146,9 @@ cpdef getOptSeq(P, tStar, nStar, w):
 			sumCDF += pdf[l]
 		cdf[o] = sumCDF
 	cdf[len(cdf)-1] = 1
-	oRand = random.random()
+	oRand = random.random() #random probability [0, 1]
 	oStar = -1
+	# choose the offset bin that oRand lands on
 	for i in range(len(cdf)-1):
 		if oRand <= cdf[i]:
 			oStar = i
@@ -152,7 +156,7 @@ cpdef getOptSeq(P, tStar, nStar, w):
 	if oStar == -1: oStar = len(cdf)-1
 	return oStar
 
-
+# Simulate Markov Chain Monte Carlo method until motif alignment entropy converges
 cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter):
 	cdef int r
 	cdef int y
@@ -193,7 +197,7 @@ cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter
 			bestTStar = tStar
 			bestIndex = index
 	
-	#Obtain A by one last update
+	#Obtain A by one last sampling
 	A = bestA
 	nStar = bestNStar
 	tStar = bestTStar
@@ -209,9 +213,10 @@ cpdef search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter
 	S = np.log2(propensity(Anew, w, k, freq))
 	return S, Anew, loss
 
+#plot sequence logo of motif using seqlogo
 def plotLogo(fasta, alignment, w):
 	pwm = np.empty(shape=(w, 4))
-	pseudo = 0
+	pseudo = 0 #no pseudocount for motif logo
 	for j in range(w):
 		count = {0:pseudo, 1:pseudo, 2:pseudo, 3:pseudo}
 		for i in range(len(alignment)):
@@ -223,6 +228,7 @@ def plotLogo(fasta, alignment, w):
 	seqlogo.seqlogo(pwmFormatted, ic_scale=False, format="png", size="medium", filename=str(fasta)[:-4]+"_motif.png")
 	print("Motif logo written to " + str(fasta)[:-4]+"_motif.png")
 
+#plot the entropy of motif alignment across iterations of sampling
 def plotLoss(fasta, loss):
 	iters = np.arange(len(loss))
 	loss = np.array(loss)
@@ -232,9 +238,8 @@ def plotLoss(fasta, loss):
 	fig.savefig(str(fasta)[:-4]+"_loss.png")
 	print("Entropy function written to " + str(fasta)[:-4]+"_loss.png")
 
-
 def main(fasta, size, mode):
-	w = int(size) #Length of Motif
+	w = int(size) #Motif width
 	print("Parsing from " + fasta)
 	seqs, freq, seqLengths = parse(np.loadtxt(fasta, dtype="str"))
 	if (mode == "divide"):
@@ -252,7 +257,6 @@ def main(fasta, size, mode):
 		np.savetxt(str(fasta)[:-4]+".matrix", Anew)
 		print("Alignment matrix written to "+str(fasta)[:-4]+".matrix")
 	print("Done")
-
 
 if __name__ == "__main__":
 	main(sys.argv[1], sys.argv[2], sys.argv[3])

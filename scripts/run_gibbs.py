@@ -4,7 +4,11 @@ import numpy as np
 import sys
 import argparse
 
-#Run the sequential implementation of gibbs sampler
+'''
+Chaitanya Srinivasan
+
+This wrapper runs the cython implementation of Gibb's Sampler for motif discovery.
+'''
 
 def main(input, width, mode):
 	cygibbs.main(input, width, mode)

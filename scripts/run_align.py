@@ -2,7 +2,12 @@ import align #CYTHON ALIGNMENT
 import sys
 import argparse
 
-#Run the cython alignment for width inference
+'''
+Chaitanya Srinivasan
+
+This wrapper runs the cython implementation of progressive sequence alignment
+for motif width inference.
+'''
 
 def main(input):
 	align.main(input)

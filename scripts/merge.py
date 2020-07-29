@@ -1,8 +1,16 @@
-import cygibbs
+import cygibbs #CYTHON GIBBS SAMPLER MOTIF DISCOVERY
 import sys
 import numpy as np
 import pickle
 import argparse
+
+'''
+Chaitanya Srinivasan
+
+This script merges motifs from all parallelized partition runs and 
+reruns motif discovery for fewer iterations to convergence on the 
+merged sequences.
+'''
 
 # read and merge inputs from partitioned run
 def merge(jobs, fasta, k, w):
@@ -11,6 +19,7 @@ def merge(jobs, fasta, k, w):
 	freq = {0:0, 1:0, 2:0, 3:0}
 	counter = 0
 	with open(jobs, "r") as f:
+		#read quarternized matrices and calculate background frequency
 		for line in f.read().splitlines():
 			data = np.loadtxt(str(line)[:-4]+".matrix")
 			with open (line[:-4]+".freq", "rb") as f:
@@ -41,7 +50,7 @@ def main(jobs, fasta, k, w):
 	tStar = seqs[0]
 	nStar = seqLengths[z]
 	index = np.array([int(i+1) for i in range(k-1)])
-	maxIter = k*np.sum(seqLengths)/len(seqLengths)
+	maxIter = k*np.sum(seqLengths)/len(seqLengths) #factor of k less iters than pure sequential
 	print("Searching")
 	S, Anew, loss = cygibbs.search(P, A, tStar, nStar, w, k, index, z, seqs, freq, seqLengths, maxIter)
 	cygibbs.plotLogo(fasta, Anew, w)

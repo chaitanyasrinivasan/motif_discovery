@@ -7,15 +7,15 @@ import sys
 Chaitanya Srinivasan
 
 This program performs a polytime progressive alignment by iteratively merging
-pairwise local alignments of sequences.
+pairwise local alignments of sequences. The motif width is inferred to be the
+alignment window maximizing entropy.
 '''
 
-#Takes in two sequences and their lengths, l1 >= l2
-#Returns the pairwise local alignment
+#Performs pairwise local alignment for two inputs seq1, seq2
 cpdef pairwise_align(seq1, seq2, l1, l2):
 	cdef int match = 5
 	cdef int mismatch = -1
-	cdef int gap = -4 
+	cdef int gap = -4 #dummy var for format, won't ever be optimal
 	cdef long [:,:] A = np.empty(shape=(l1+1, l2+1), dtype=int)
 	cdef long [:,:] T = np.zeros(shape=(l1+1, l2+1), dtype=int)
 	cdef int i
@@ -62,7 +62,7 @@ cpdef pairwise_align(seq1, seq2, l1, l2):
 			aligned[1][k] = seq2[k]
 	return aligned
 
-#Hamming distance function, returns distance
+#Finds hamming distance between two sequences
 cpdef distance(seq1, seq2):
 	cdef int val = 0
 	cdef int i
@@ -71,7 +71,7 @@ cpdef distance(seq1, seq2):
 			val += 1
 	return val
 
-# Returns MST wrt distance of pairwise alignments
+#Returns MST wrt distance of pairwise alignments
 cpdef get_pairs(seqs, seqLengths):
 	cdef long [:,:] distances = np.zeros(shape=(len(seqs), len(seqs)), dtype=int)
 	cdef int i
@@ -106,7 +106,7 @@ cpdef get_pairs(seqs, seqLengths):
 			dists[minArg] = i
 	return dists, oddSeq
 
-#Perform local alignment of two aligned sequence sets, l1 >= l2
+#Local alignment of two aligned sequence sets of variable size
 cpdef merge_align(align1, align2, l1, l2):
 	cdef int match = 5
 	cdef int mismatch = -1
@@ -163,7 +163,7 @@ cpdef merge_align(align1, align2, l1, l2):
 				aligned[l+len(align1)][k] = align2[l][k]
 	return aligned
 
-#Initalize tree with pairwise alignment of most similar sequence pairs
+#Gets pairwise alignment of unique sequence pairs of highest similarity
 cpdef build_roots(seqs, dists, seqLengths, oddSeq):
 	noDoubles = set()
 	seqList = list()
@@ -182,7 +182,7 @@ cpdef build_roots(seqs, dists, seqLengths, oddSeq):
 		seqList.append(seqs[oddSeq])
 	return seqList, lengthList
 
-#Recursively merge alignments
+#Finds multiple sequence alignment by recursively merging alignments
 cpdef merge_leaves(seqList, lengthList):
 	cdef list vals
 	cdef list lengths
@@ -206,6 +206,7 @@ cpdef merge_leaves(seqList, lengthList):
 			lengths.append(len(vals[-1][0]))
 		return merge_leaves(vals, lengths)
 
+#Calculates the entropy of a sub-alignment
 cpdef entropy(A, freq):
 	cdef int w = len(A[0])
 	cdef double pseudo = 0.1
@@ -236,7 +237,8 @@ cpdef infer(multi_align, freq, seqLengths):
 	cdef int j
 	cdef double maxVal
 	cdef int maxArg
-	
+
+	#measure entropy of all sub-alignments
 	for i in range(len(multi_align[0])-1):
 		for j in range(i+1, len(multi_align[0])):
 			val = (j-i)*entropy(multi_align[:,i:j], freq)
@@ -262,7 +264,7 @@ def main(fasta):
 	seqList, lengthList = build_roots(seqs, dists, seqLengths, oddSeq)
 	multi_align = merge_leaves(seqList, lengthList)
 	width = infer(multi_align, freq, seqLengths)
-	print(width)
+	print(width) #send output to find_motif.sh
 
 if __name__ == "__main__":
 	main(sys.argv[1])

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -n 1
-#SBATCH --partition=pfen_bigmem
+#SBATCH --partition=pfen2
 #SBATCH --job-name=motif_find
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
@@ -8,6 +8,10 @@
 #SBATCH --error=logs/motif_find_%A_%a.err.txt
 #SBATCH --output=logs/motif_find_%A_%a.out.txt
 #SBATCH --array=1-REPLACE
+
+#Chaitanya Srinivasan
+#This template sbatch script is used to submit parallel motif discovery jobs.
+#The number of array jobs is substituted with the number of input jobs in find_motif.sh
 
 DATA=$(awk "NR==${SLURM_ARRAY_TASK_ID}" jobs.txt)
 python run_gibbs.py -i $DATA -w $1 -m divide

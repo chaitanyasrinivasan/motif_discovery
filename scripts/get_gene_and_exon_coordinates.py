@@ -1,10 +1,18 @@
 import sys
 import gzip
 
+'''
+Chaitanya Srinivasan
+
+This script produces bedfiles corresponding to gene and exon coordinates for
+an input list of genes crossreferences to the Human GENCODE v33 annotation.
+'''
+
 def map_coordinates(geneMarker):
 	geneoutfile = geneMarker[:-4]+"_genes.bed"
 	exonoutfile = geneMarker[:-4]+"_exons.bed"
-    #Read in hg38 gene coordinates
+    #Read in hg38 gene coordinates and gene list
+    #Write to genes and exons BED files
 	with open("../scripts/gencode.v33.annotation.gff3", 'r') as f, open(geneMarker, 'r') as g, open(geneoutfile, 'w') as h, open(exonoutfile, 'w') as e:
 		geneCoordinates = dict()
 		exonCoordinates = dict()
