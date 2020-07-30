@@ -75,7 +75,7 @@ If the `-s` or `-p` flags are not specified, the program will automatically choo
 
 ```shell
 cd motif_discovery/scripts
-./gibbs_parallel.sh -i [/path/to/input]
+./find_motif.sh -i [/path/to/input]
 ```
 ## Output
 
